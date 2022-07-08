@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>Title</ShortName>
+  <Description>Enter your description</Description>
+  <Tags>web internet cyber interest subject</Tags>
+  <Contact>Put a contact if you want</Contact>
+  <Url type="text/html" template="https://wiby.me/?q={searchTerms}"/>
+  <LongName>Long title name</LongName>
+  <Image height="16" width="16" type="image/x-icon">URL_TO_FAVICON.ICO_FILE</Image>
+  <Query role="request" searchTerms="cats" />
+  <Language>en-us</Language>
+  <InputEncoding>UTF-8</InputEncoding>
+  <moz:SearchForm>URL_TO_YOUR_SEARCH_ENGINE</moz:SearchForm>
+</OpenSearchDescription>

@@ -1,0 +1,16 @@
+body { background-color: #FAFAFA; }
+a:link { COLOR: #7900A7;  font-size: 17px; text-decoration: none;}
+a:visited { COLOR: #7900A7; }
+a.tlink:visited { COLOR: #515151; }
+a.title:link { COLOR: #7900A7; font-weight: bold; font-size: 29px;  text-decoration: none; font-family: "Georgia"; }
+a.tiny { COLOR: #7900A7; font-size: 17px; }
+a.pin1 { font-size:14px; COLOR: #7900A7; }
+a.tlink { font-size: 21px; COLOR: #062DA1 }
+a.more { font-size: 21px; COLOR: #7900A7 }
+h1 { margin:0px; line-height:96px; }
+p { font-size:17px; margin-bottom:0px; margin-top:0px; }
+.titlep { COLOR: #7900A7; font-weight: bold; font-size: 83px; font-family: "Georgia"; }
+.url { font-size:15px; color: #3a5a0c; }
+.pin { font-size:14px; COLOR: #2e2e2e;}
+textarea:focus, input:focus{ outline: none;}
+blockquote { width: 680px; }

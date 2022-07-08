@@ -1,0 +1,533 @@
+<!DOCTYPE html>    
+<html lang="en">    
+<head>    
+<title>Build your own Search Engine</title>
+<style> 
+h1 { color: #062DA1; }
+body { background-color: #FAFAFA; }
+a:link { COLOR: #062DA1;  font-size: 17px; text-decoration: none;}
+a:visited { COLOR: #7900A7; }
+a.tlink:visited { COLOR: #515151; }
+a.title:link { COLOR: #7900A7; font-weight: bold; font-size: 29px;  text-decoration: none; font-family: "Georgia"; }
+a.tiny { COLOR: #7900A7; font-size: 17px; }
+a.pin1 { font-size:14px; COLOR: #7900A7; }
+a.tlink { font-size: 21px; COLOR: #062DA1 }
+a.more { font-size: 21px; COLOR: #7900A7 }
+h1 { margin:0px; line-height:96px; }
+p { font-size:17px; margin-bottom:0px; margin-top:0px; }
+.titlep { COLOR: #7900A7; font-weight: bold; font-size: 83px; font-family: "Georgia"; }
+.url { font-size:15px; color: #3a5a0c; }
+.pin { font-size:14px; COLOR: #2e2e2e;}
+textarea:focus, input:focus{ outline: none;}
+blockquote { width: 700px; }
+pre { width:700px; white-space: pre-wrap; word-wrap: break-word; }
+</style> 
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
+<meta name="description" content="The source code and instructions to create your own version of Wiby."/> 
+</head>        
+<body> 
+<blockquote>   
+<h1 align="center">Build Your Own Search Engine</h1>
+<div align="center">(Wiby Install Guide)</div>
+<br>
+<p>
+<a href="guide.html#overview">Overview</a>
+<br>
+<a href="guide.html#install">Installation</a>
+<br>
+<a href="guide.html#control">Controlling</a>
+<br>
+<a href="guide.html#scale">Scaling</a>
+
+<h2><a name="overview">Overview</a></h2>
+July 7, 2022. Wiby is a search engine for the World Wide Web. I am ready to give it away under the GPLv2 license now that it has the features I want.
+<br>
+<br>
+It includes a web interface allowing guardians to control where, how far, and how often it crawls websites and follows hyperlinks. The search index is stored inside of a MySQL full-text index.
+<br>
+<br>
+Fast queries are maintained by concurrently reading different sections of the index across multiple replication servers, returning a list of top results from each replica, 
+then searching the combined list to ensure correct ordering. Replicas that fail are automatically excluded; new replicas are easy to include. 
+As new pages are crawled, they are stored randomly across the index, ensuring each replica can obtain relevant results.<br>
+<br>
+It is not meant to index the entire web and then sort it with a ranking algorithm. 
+It prefers to seed its index through human submissions made by guests, or by the guardian(s) of the search engine. 
+<br>
+<br>
+The software is designed for anyone with some extra computers (even a Pi), to host their own search engine catering to whatever niche matters to them. The search engine includes a simple API 
+for meta search engines to harness.
+<br>
+<br>
+I hope this will enable anyone with a love of computers to cheaply build and maintain a search engine of their own. 
+I hope it can cultivate free and independent search engines, ensuring accessibility of ideas and information across the World Wide Web.
+<br>
+<br>
+<pre>
+
+       Web Traffic
+            |
+            |
++-----------+-----------+
+| Reverse Proxy (nginx) |
++-----------+-----------+
+            |
+            |
++-----------+-----------+
+|  Wiby Core Server(s)  |+-----------------+----------------------------+
+|(PHP or Golang version)|                  |                            |
++-----------+-----------+       +----------+----------+       +---------+---------+
+            |                   |Replication Databases|+-----+|Replication Tracker|
+            |                   +----------+----------+       +-------------------+
++-----------+-----------+                  |
+|    Primary Database   |+-----------------+
+|   (MySQL or MariaDB)  |
++----+-------------+----+
+     |             |  
+     |             |  
++----+-----+  +----+----+
+|   Web    |  | Refresh |
+|Crawler(s)|  |Scheduler|
++----------+  +---------+
+</pre>
+<br>
+<hr>
+<h2><a name="install">Installation</a></h2>
+I can only provide manual install instructions at this time. 
+<br>
+<br>
+Note that while the software is functionally complete, it is still in beta. Anticipate that some bugs will be discovered now that the source is released. 
+Ensure that you isolate the search engine from your other important services, and if you are running parts of it out of your home, keep the servers 
+on a separate VLAN. Continue this practise even when the software reaches "1.0".
+<br>
+<br>
+If you have created a "LAMP", or rather a "LEMP" server before, this isn't much more complicated. If you've never done that, I suggest you find a "LEMP" tutorial.
+<br><br>
+<h3>Build a LEMP server</h3>
+Digital Ocean tutorials are usually pretty good so <a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-20-04">here's a link to one</a>.
+<br>
+<br>
+For the sake of simplicity, assume all instructions are for Ubuntu 20.04. If you are on a different distro, modify the install steps accordingly to suit your distro.
+<br>
+If you don't have a physical server, you can rent computing space by looking for a "VPS provider". This virtual computer will be your reverse proxy, and if you want, it can host everything else too.
+<br>
+<br>
+<h3>Install the following additional packages:</h3>
+<pre>apt install build-essential php-gd libcurl4-openssl-dev libmysqlclient-dev mysql-server golang git
+go get -u github.com/go-sql-driver/mysql</pre>
+
+<br>
+<h3>Get Wiby Source Files</h3>
+Download the source directly from Wiby <a href="/download/wibysource.zip">here</a>, or from <a href="https://github.com/wibyweb/wiby/">GitHub</a>. The source is released under the GPLv2 license. Copy the source files for Wiby to your server.
+<br>
+<br>
+
+<h3>Compile the crawler (cr), refresh scheduler (rs), replication tracker (rt):</h3>
+<pre>
+gcc cr.c -o cr -I/usr/include/mysql -lmysqlclient -lcurl -std=c99 -O3
+gcc rs.c -o rs -I/usr/include/mysql -lmysqlclient -std=c99 -O3
+gcc rt.c -o rt -I/usr/include/mysql -lmysqlclient -std=c99 -O3
+</pre>
+If you get any compile errors, it is likely due to the path of the mysql or libcurl header files. 
+This could happen if you are not using Ubuntu 20. You might have to locate the correct path for curl.h, easy.h, and mysql.h.
+<br>
+<br>
+<h3>Build the core server application:</h3>
+<pre>
+Inside the go folder:
+
+go build core.go
+go build 1core.go
+</pre>
+If you eventually plan use replication servers or you are using a computer with a lot of available cores, you can use 'core'. 
+Alternately, if you dont intend to have a large index and do not plan on adding replication servers, you can use '1core'. 
+You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version 
+is used mainly for prototyping.
+<br>
+<br>
+<h3>Build the database:</h3>
+Make sure these lines are inside of /etc/mysql/my.cnf, then restart mysql
+<pre>
+[client]
+default-character-set=utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+max_connections = 2000
+ft_min_word_len=2
+sql_mode = "NO_BACKSLASH_ESCAPES"
+character-set-server = utf8mb4
+collation-server = utf8mb4_0900_ai_ci
+skip-character-set-client-handshake
+default-authentication-plugin=mysql_native_password
+wait_timeout = 800
+
+#memory use settings, you should adjust this based on your hardware
+innodb_buffer_pool_size = 1342177280
+innodb_buffer_pool_instances = 2
+
+</pre>
+Login to MySQL and type:
+<pre>
+create database wiby;
+create database wibytemp;
+</pre>
+Import the wiby and wibytemp database files:
+<pre>
+mysql -u root -p wiby < wiby.sql
+mysql -u root -p wibytemp < wibytemp.sql
+</pre>
+Login to MySQL, create the following accounts and give them the correct access:
+<pre>
+create user 'guest'@'localhost' identified by 'qwer';
+create user 'approver'@'localhost' identified by 'foobar';
+create user 'crawler'@'localhost' identified by 'seekout';
+use wiby;
+grant select on accounts to 'approver'@'localhost';
+grant select on reviewqueue to 'approver'@'localhost';
+grant insert on indexqueue to 'approver'@'localhost';
+grant delete on reviewqueue to 'approver'@'localhost';
+grant update on reviewqueue to 'approver'@'localhost';
+grant select on indexqueue to 'crawler'@'localhost';
+grant insert on windex to 'crawler'@'localhost';
+grant insert on indexqueue to 'crawler'@'localhost';
+grant update on windex to 'crawler'@'localhost';
+grant delete on indexqueue to 'crawler'@'localhost';
+grant delete on windex to 'crawler'@'localhost';
+grant select on windex to 'crawler'@'localhost';
+grant insert on reviewqueue to 'crawler'@'localhost';
+grant select on windex to 'guest'@'localhost';
+grant insert on reviewqueue to 'guest'@'localhost';
+grant insert on feedback to 'guest'@'localhost';
+grant select on feedback to 'approver'@'localhost';
+grant delete on feedback to 'approver'@'localhost';
+grant insert on graveyard to 'approver'@'localhost';
+grant update on graveyard to 'approver'@'localhost';
+grant delete on graveyard to 'approver'@'localhost';
+grant select on graveyard to 'approver'@'localhost';
+grant update on accounts to 'approver'@'localhost';
+grant insert on accounts to 'approver'@'localhost';
+grant delete on accounts to 'approver'@'localhost';
+use wibytemp;
+grant select on titlecheck to 'crawler'@'localhost';
+grant insert on titlecheck to 'crawler'@'localhost';
+grant delete on titlecheck to 'crawler'@'localhost';
+grant select on rejected to 'approver'@'localhost';
+grant insert on rejected to 'approver'@'localhost';
+grant delete on rejected to 'approver'@'localhost';
+grant select on reserve_id to 'crawler'@'localhost';
+grant insert on reserve_id to 'crawler'@'localhost';
+grant delete on reserve_id to 'crawler'@'localhost';
+FLUSH PRIVILEGES;
+</pre>
+<h3>Copy the HTML files and PHP scripts to your web server</h3>
+<pre>Copy the contents of the the html directory into the nginx html directory (/var/www/html)</pre>
+
+<h3>Configure nginx for Wiby</h3>
+In /etc/nginx/, create a directory called 'phpcache', and another one called 'cache'.
+<br>
+Instead of going through every detail, I will provide a template for you to try out as your default nginx config from inside /etc/nginx/sites-available/ of the source code.
+<br>
+<br>
+You should learn nginx configuration on your own, this template is just to assist. 
+If you are using only the php version, comment all "core app" location entries to revert Wiby search to the php only version.
+<br>
+Make sure ssl_certificate and ssl_certificate_key have the path for your SSL files instead of the example paths. If you don't want to use SSL, just remove the server {} configuration for SSL connections (on port 443).
+<br>
+<br>
+<h3>Start the Refresh Scheduler</h3>
+This program (rs) will make sure all pages indexed are refreshed at least once per week (or sooner depending on how you assign updates to an individual website). 
+You may want to run this on startup, easiest way to set that is with a cron job (crontab -e). Run './rs -h' to get more parameters.
+<br>
+<br>
+<h3>Start the Crawler</h3>
+It is best to run the crawler in a screen session so that you can monitor its output. You can have more than one crawler running as long as you keep them in separate directories, include a symlink to the same robots folder, and also set the correct parameters on each. 
+To view the parameters, type './cr -h'. Without any parameters set, you can only run one crawler (which is probably all you need anyway).
+<br>
+<br>
+Note that you may need to change the crawler's user-agent if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
+<br> 
+<br>
+Make sure the robots folder exists. robots.txt files are stored in the robots folder and are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. 
+You can turn off checking for robots.txt files by commenting out the line calling the "checkrobots" function inside of cr.c.
+<br>
+<br>
+If crawling through hyperlinks on a page, the following file types are accepted: html, htm, txt, php, asp. Links containing parameters are ignored. These limitations do not apply to pages directly submitted by people.
+<br>
+<br>
+<h3>Start the core server</h3>
+'1core' is fine to get started if you have a smaller index. Use 'core' if you intend to scale computer resources as the index grows. You don't necessarily have to run this if you would prefer to use the simple index.php version. 
+You may want to run the core server on startup with a cron job.
+<br>
+<br>
+<h3>Set Administrator Password for the Web Interface</h3>
+There is no default web login, you will have to set this manually the first time:
+<pre>
+Rename the /html/hash folder to something private.
+
+Edit html/private_folder_name/hashmake.php and change 'secretpassword' to your preferred admin password. 
+
+Access /private_folder_name/hashmake.php from your browser and copy down the hash.
+
+After you have copied it down, delete or remove hashmake.php from your web server folder so that the hash cannot be discovered.
+</pre>
+Login to MySQL and create the account:
+<pre>
+use wiby;
+INSERT INTO accounts (name,hash,level) VALUES('your_username','your_password_hash','admin');
+</pre>
+You can now access /accounts/ from your browser, login to create and manage all accounts for administrators and guardians of the search engine.
+<br>
+<br>
+<b>admin</b> - Can access all web forms for the search engine including the /accounts/ page to create and delete accounts.
+<br>
+<br>
+<b>guardian</b> - Can access all forms except the /accounts/ form. The main role of a guardian is to gatekeep the index of the search engine.
+<br>
+<br>
+<br>
+<hr>
+<h2><a name="control">Controlling the Search Engine</a></h2>
+<br>
+There are several forms to control the search engine. There is no central form linking everything together, just a collection of different folders that you can rename if you want.
+<br>
+<br>
+<h3>/submit/</h3> This public facing form allows users of the search engine to submit websites for indexing, provided they comply with your submission criteria, which you can modify on /submit/form.html.php.
+<br>
+<br>
+<h3>/accounts/</h3>
+This is the account management page. Admins have options to create, lock, change account type, delete, and reset passwords. Guardians have the option to change their password.
+<br>
+<br>
+<h3>/review/</h3> This is the most important form, intended for you to verify website submissions meet your criteria. Up to 10 pages are assigned to each guardian or admin that accesses the form. The pages will remain assigned to that account for up to 30 minutes. 
+From here you can control how much, how deep, and how often the web crawler will access each submission. Here is an example of the available options for a website submission:
+<br>
+<br>
+<a href="url_that_was_submitted">url_that_was_submitted</a>
+<br>
+[Worksafe<input type="checkbox" id="worksafe" name="worksafe" checked="checked">]
+	    [Surprise<input type="checkbox" id="surprise" name="surprise">]
+            [Skip<input type="checkbox" id="skip" name="skip" >]
+            [Bury<input type="checkbox" id="bury" name="bury" >]
+	    [Deny<input type="checkbox" id="deny" name="deny" >]
+	    [Updatable<select id="updatable" name="updatable"> 
+			<option value=1>1 WEEK</option>
+			<option value=2>1 DAY</option> 
+			<option value=3>12 HOUR</option>
+			<option value=4>6 HOUR</option>
+			<option value=5>3 HOUR</option>
+			<option value=6>1 HOUR</option>
+		      </select>]
+		<br>
+		[Crawl: Depth <input type="number" id="crawldepth" name="crawldepth" >
+		Pages <input type="number" id="crawlpages" name="crawlpages" >
+		Type <select id="crawltype" name="crawltype">
+			<option value=0>Local</option>
+			<option value=1>All</option>
+			<option value=2>External</option>
+			</select>
+		Enforce Rules<input type="checkbox" id="forcerules" name="forcerules" >
+		Repeat<input type="checkbox" id="crawlrepeat" name="crawlrepeat" >]
+<br>
+<br>
+Explanation of the above options:
+<br>
+<br>
+<b>Worksafe</b> - Indicates if the website is safe for work. Set by the user who submitted the website, however you can change it based on your determination.
+<br>
+<br>
+<b>Surprise</b> - Checking this box will put it in the "surprise me" feature, where users get redirected to random websites when they click "surprise me". Note that this feature won't show NSFW websites even if they are set to surprise.
+<br>
+<br>
+<b>Skip</b> - Selecting this option will skip indexing the page and it will reappear on the review form after you submit the rest of the pages for crawling.
+<br>
+<br>
+<b>Bury</b> - Selecting this will move the page to a grave yard (/grave/), a holding place with the same options as /review/ for websites that might have stopped working but that you suspect may come back online. The crawler will detect this automatically and send the page back into review. When you click on the link and see a 404, you can be assured the crawler sent it back to review after failing two update cycles. This also happens if the title of the page changes. The crawler will only do this for pages directly submitted by people. This curtesy is not given to websites that are automatically crawled but then fail to work later on. For those sites, after two failed update cycles, the page will be removed.
+<br>
+<br>
+<b>Deny</b> - Select this to drop the page from being indexed. If the page does not meet your submission criteria, this would be the option to remove it from the queue.
+<br>
+<br>
+<b>Updatable</b> - The update cycle for the web crawler to return to the page. This only applies to pages submitted by people, pages found by link crawling always go on a 1 week update cycle.
+<br>
+<br>
+<b>------------------- Crawl -------------------</b> 
+<br>
+The options listed below control how the crawler indexes hyperlinks on the website. By default, the crawler does not index any hyperlinks, it will only index the page that is submitted.
+<br>
+<br>
+<b>Depth</b>  - How many layers of links to crawl through. You must set at least a depth of 1 if you want to crawl any hyperlinks. Setting a negative value = no limit. Be careful about that.
+<br>
+<br>
+<b>Pages</b> - How many pages to crawl on each link layer (depth). They will be randomly selected. You must set at least 1 if you want to crawl any hyperlinks. Setting a negative value = no limit. Be careful about that.
+<br>
+<br>
+<b>Type</b> - Indicates if you want to only crawl links local to the website, or links external to the website, or both.
+<br>
+<br>
+<b>Enforce rules</b> - This is a blunt tool that checks if pages have more than two scripts and/or css files. If the limit is exceded, the page will not be indexed. I don't use it and prefer to manually check based on more forgiving criteria.
+<br>
+<br>
+<b>Repeat</b> - While the crawler will always return to update each page in the index, it wont crawl through hyperlinks again unless you tell it to. Even so, it only crawls hyperlinks on the page at a depth of 1 when repeat is selected.
+<br>
+<br>
+<h3>/ban/</h3>
+You can delete or ban individual URL's from the index with this form. Its pretty simple as I don't use it much. You can't delete an entire domain with it, for that you can build your own query in the MySQL console.
+<br>
+<br>
+<h3>/bulksubmit/</h3>
+Admins/Guardians can import a list of URLs into the review queue with this form.
+<br>
+<br>
+<h3>/feedback/</h3>
+Users can submit feedback for you with this form.
+<br>
+<br>
+<h3>/readf/</h3>
+Where admin accounts can read feedback submitted by users.
+<br>
+<br>
+<h3>/grave/</h3>
+It has the same features as /review/. Websites that you don't yet want to index but don't want to forget about are stored inside /grave/ by selecting 'bury' from inside /review/. The web crawler will (only for pages submitted directly by people), move 404'd pages or pages where the title has changed back to /review/ after two update cycles 
+where the page does not return to normal. So after a few weeks you may notice dead pages appearing in /review/, you can decide to drop the page or to bury it where it will be moved to /grave/. The page might go back to normal at some point and you can check /grave/ to see if it resurrects. 
+<br>
+<br>
+<h3>/insert/</h3>
+This was the first form created back in late 2016 to populate the Wiby index and see if the search engine could even work as a proof of concept. It was meant to manually enter pages into the index as no crawler existed yet. 
+It is still useful if you want to manually index a page that refuses to permit the crawler to access it. In that case, set updatable to 0.
+<br>
+<br>
+<h3>Additional Notes</h3>
+If you want to force a website to appear at the top rank for a specific single word query, (like "weather"), you can force it by adding "weather" to the tags column for the target url in the windex table. Use this sparingly. 
+There is no form to do this on an existing website, you will have to update the row in mysql manually.
+<br>
+<br>
+<br>
+<hr>
+<h2><a name="scale">Scaling the Search Engine</a></h2>
+<br>
+You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local netowork close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. 
+Edit the servers.csv file for rt to indicate all available replica servers. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each core) works also.
+<br>
+<br>
+The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, 
+drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement 
+on line 365 and rebuild the core application.
+<br>
+<br>
+The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
+the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas. Full instructions below:
+<br>
+<br>
+On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own.
+<pre>
+#setting up replication below
+bind-address = 127.0.0.1,my.vpn.ip
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_do_db = wiby
+binlog_format = mixed
+</pre>
+In MySQL on the primary server, create a user for replica access:
+<pre>
+create user 'slave_user'@'%' identified by 'd0gemuchw0w';
+GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%';
+FLUSH PRIVILEGES;
+</pre>
+On the replica server, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart mysql:
+<pre>
+[client]
+default-character-set=utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+max_connections = 2000
+ft_min_word_len=2
+sql_mode = "NO_BACKSLASH_ESCAPES"
+#character-set-client-handshake = FALSE
+character-set-server = utf8mb4
+collation-server = utf8mb4_0900_ai_ci
+skip-character-set-client-handshake
+default-authentication-plugin=mysql_native_password
+wait_timeout = 800
+
+#memory use settings, you should adjust this based on your hardware
+innodb_buffer_pool_size = 1342177280
+innodb_buffer_pool_instances = 2
+
+#setting up replication below
+bind-address = 0.0.0.0
+server-id = 2
+relay_log_info_repository = TABLE
+relay_log_recovery = ON
+sync_binlog=1
+</pre>
+Make sure only VPN and VLAN addresses can reach your replicas. The bind address of 0.0.0.0 can be replaced with '127.0.0.1,replica.vpn.ip' which is safer but also more crash prone if the VPN address is not available on startup.
+<br>
+<br>
+To export the database to the replica server, on the primary server, stop the web crawler and hide any web forms that can accept new data, then open MySQL and do the following.
+<pre>
+USE wiby;
+FLUSH TABLES WITH READ LOCK;
+SHOW MASTER STATUS;
+
++------------------+----------+--------------+------------------+-------------------+
+| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
++------------------+----------+--------------+------------------+-------------------+
+| mysql-bin.000055 | 15871269 | wiby         |                  |                   |
++------------------+----------+--------------+------------------+-------------------+
+</pre>
+Keep the above session window open (or run it in a screen session).
+<br>
+Copy down the information from that table. In a separate session window, export the database:
+<pre>
+mysqldump -u root -p wiby > wiby.sql
+</pre>
+Once you have exported the database and recorded what you need, you can unlock the tables, and resume as normal. On the session window displaying the master status:
+<pre>
+UNLOCK TABLES;
+</pre>
+You can now close that window if you want.
+<br>
+On the replica server, import the database:
+<pre>
+mysql -u root -p wiby < wiby.sql
+</pre>
+Login to MySQL and type the following but replace the IP, MASTER_LOG_FILE, and MASTER_LOG_POS with yours from the table:
+<pre>
+CHANGE MASTER TO MASTER_HOST='primary.server.ip',MASTER_USER='slave_user', MASTER_PASSWORD='d0gemuchw0w', MASTER_LOG_FILE='mysql-bin.000055', MASTER_LOG_POS=15871269;
+START SLAVE;
+</pre>
+To verify that the replica is syncronized, type the following on the replica in MySQL:
+<pre>
+SHOW SLAVE STATUS\G
+</pre>
+Make sure that:
+<pre>
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+</pre>
+In MySQL on the replica:
+<pre>
+use wiby;
+create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
+grant select on windex to 'remote_guest'@'%';
+create user 'guest'@'localhost' identified by 'qwer';
+grant select on windex to 'guest'@'localhost';
+FLUSH PRIVILEGES;
+
+</pre>
+<h3>Load Balancing</h3>
+You should run the core application on one or more of your replicas and have nginx send traffic to it, this way you can reduce the burden on your VPS. The replication tracker (rt) must run on the same server 
+and directory that the core application is running on (not required for 1core).
+<br>
+<br>
+Add the replica server's VPN address/port to upstream remote_core {} from the default config for nginx (see the provided example template). You can use the VPS as a backup instead by adding 'backup' to its address (eg: server 127.0.0.1:8080 backup;)
+<br>
+</p>
+</blockquote>
+</body>    
+</html>

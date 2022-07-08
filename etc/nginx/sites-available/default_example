@@ -1,0 +1,270 @@
+##
+# You should look at the following URL's in order to grasp a solid understanding
+# of Nginx configuration files in order to fully unleash the power of Nginx.
+# https://www.nginx.com/resources/wiki/start/
+# https://www.nginx.com/resources/wiki/start/topics/tutorials/config_pitfalls/
+# https://wiki.debian.org/Nginx/DirectoryStructure
+#
+# In most cases, administrators will remove this file from sites-enabled/ and
+# leave it as reference inside of sites-available where it will continue to be
+# updated by the nginx packaging team.
+#
+# This file will automatically load configuration files provided by other
+# applications, such as Drupal or Wordpress. These applications will be made
+# available underneath a path with that package name, such as /drupal8.
+#
+# Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
+##
+
+# Default server configuration
+#
+
+fastcgi_cache_path /etc/nginx/phpcache levels=1:2 max_size=1g keys_zone=MYAPP:100m inactive=5m;
+fastcgi_cache_key "$scheme$request_method$host$request_uri";
+
+proxy_cache_path /etc/nginx/cache levels=1:2 keys_zone=main_cache:100m max_size=1g inactive=5m;
+proxy_cache_key "$scheme$request_method$host$request_uri$cookie_ws";
+
+#server { #redirect http to https
+#       listen 80 default_server;
+#       listen [::]:80 default_server ipv6only=on;
+#       server_name wiby.me;
+#       return 301 https://$host$request_uri;
+#}
+upstream remote_core {
+#	server 10.8.0.101:8080;
+#	server 10.8.0.102:8080;
+#	server 10.8.0.103:8080;
+#	server 10.8.0.104:8080;
+#	server 127.0.0.1:8080 backup;
+	server 127.0.0.1:8080;
+}
+server { #handles http requests. Allows for legacy browsers or else redirects to https
+    listen 80 default_server;
+#    listen [::]:80 default_server ipv6only=off; #this prevented nginx from starting on my vps, said port was in use
+	server_name wiby.me www.wiby.me;
+	
+    if ( $http_user_agent ~ (Chrome)) { #redirect to https for old chrome devices
+               return 301 https://$host$request_uri;
+    }
+
+	
+	root /var/www/html;
+
+	# Add index.php to the list if you are using PHP
+	index index.php index.html index.htm;
+
+	#comment all "core app" location entries to revert wiby search to php
+
+        location = / { #core app
+                proxy_cache main_cache;
+                proxy_cache_valid 5m;
+                proxy_cache_bypass $no_cache;
+                proxy_no_cache $no_cache;
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                #proxy_pass http://127.0.0.1:8080/;
+                proxy_pass http://remote_core/;
+        }
+        location /settings/ { #core app
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_pass http://127.0.0.1:8080/settings/;
+                #proxy_pass http://remote_core/settings/;
+        }
+        location = /json/ { #core app
+                proxy_cache main_cache;
+                proxy_cache_valid 5m;
+                proxy_cache_bypass $no_cache;
+                proxy_no_cache $no_cache;
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                #proxy_pass http://127.0.0.1:8080/json/;
+                proxy_pass http://remote_core/json/;
+        }
+        location = /surprise/ { #core app
+               # try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_pass http://127.0.0.1:8080/surprise/;
+                #proxy_pass http://remote_core/surprise/;
+        }		
+
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}
+
+	# pass PHP scripts to FastCGI server
+	#
+	location ~ \.php$ {
+	#	try_files $url = 404;
+		fastcgi_split_path_info ^(.+\.php)(/.+)$;
+		include snippets/fastcgi-php.conf;
+		include fastcgi_params;
+	#
+	#	# With php-fpm (or other unix sockets):
+		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+		fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+	#	fastcgi_index index.php;
+	#	# With php-cgi (or other tcp sockets):
+	#	fastcgi_pass 127.0.0.1:9000;
+	#	#for microcaching
+		fastcgi_cache MYAPP;
+		fastcgi_cache_valid 5m;
+		fastcgi_cache_bypass $no_cache;
+		fastcgi_no_cache $no_cache;
+	}
+
+	# deny access to .htaccess files, if Apache's document root
+
+	# concurs with nginx's one
+	#
+	#location ~ /\.ht {
+	#	deny all;
+	#}
+
+        #       Don't cache the following URLs
+        if ($request_uri ~* "/(review/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|login.html.php)") { set $no_cache 1; }
+	if ($request_uri ~* "/(review/|inndexqueue.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|review.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|error.html.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(insert/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|login.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|form.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|insert.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|error.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|insert.html.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(surprise/|index.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(submit/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|form.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|submit.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|error.html.php)") { set $no_cache 1; }	   
+}
+
+server {
+	#listen 80 default_server; #comment this out if you dont want http
+	#listen [::]:80 default_server; #comment this out if you dont want http
+
+	# SSL configuration
+	#
+	listen 443 ssl default_server;
+	#listen [::]:443 ssl default_server; #nginx wasnt starting on my vps with this
+
+	ssl_certificate /etc/nginx/ssl/YOUR_SSL_CERT.crt;
+	ssl_certificate_key /etc/nginx/ssl/YOUR_SSL_KEY.key;	 
+	#
+	# Note: You should disable gzip for SSL traffic.
+	# See: https://bugs.debian.org/773332
+	#
+	# Read up on ssl_ciphers to ensure a secure configuration.
+	# See: https://bugs.debian.org/765782
+	#
+	# Self signed certs generated by the ssl-cert package
+	# Don't use them in a production server!
+	#
+	# include snippets/snakeoil.conf;
+	
+	root /var/www/html;
+
+	# Add index.php to the list if you are using PHP
+	index index.php index.html index.htm;
+
+	server_name wiby.me www.wiby.me;
+
+	#comment all "core app" location entries to revert wiby search to php
+
+        location = / { #core app        
+                proxy_cache main_cache;
+                proxy_cache_valid 5m;
+                proxy_cache_bypass $no_cache;
+                proxy_no_cache $no_cache;
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                #proxy_pass http://127.0.0.1:8080/;
+		proxy_pass http://remote_core/;		
+        }
+        location /settings/ { #core app
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_pass http://127.0.0.1:8080/settings/;
+		#proxy_pass http://remote_core/settings/;
+        }
+        location = /json/ { #core app
+                proxy_cache main_cache;
+                proxy_cache_valid 5m;
+                proxy_cache_bypass $no_cache;
+                proxy_no_cache $no_cache;
+                try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                #proxy_pass http://127.0.0.1:8080/json/;
+		proxy_pass http://remote_core/json/;
+        }
+        location = /surprise/ { #core app
+               # try_files $uri $uri/ =404;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_pass http://127.0.0.1:8080/surprise/;
+		#proxy_pass http://remote_core/surprise/;
+        }
+
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}	
+
+	# pass PHP scripts to FastCGI server
+	#
+	location ~ \.php$ {
+	#	try_files $url = 404;
+		fastcgi_split_path_info ^(.+\.php)(/.+)$;
+		include snippets/fastcgi-php.conf;
+		include fastcgi_params;
+	#
+	#	# With php-fpm (or other unix sockets):
+		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+		fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+	#	fastcgi_index index.php;
+	#	# With php-cgi (or other tcp sockets):
+	#	fastcgi_pass 127.0.0.1:9000;
+	#	#for microcaching
+		fastcgi_cache MYAPP;
+		fastcgi_cache_valid 5m;
+		fastcgi_cache_bypass $no_cache;
+		fastcgi_no_cache $no_cache;
+	}
+
+
+	# deny access to .htaccess files, if Apache's document root
+
+	# concurs with nginx's one
+	#
+	#location ~ /\.ht {
+	#	deny all;
+	#}
+
+        #       Don't cache the following URLs
+        if ($request_uri ~* "/(review/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|login.html.php)") { set $no_cache 1; }
+	if ($request_uri ~* "/(review/|inndexqueue.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|review.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(review/|error.html.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(insert/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|login.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|form.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|insert.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|error.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(insert/|insert.html.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(surprise/|index.php)") { set $no_cache 1; }
+
+        if ($request_uri ~* "/(submit/|index.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|form.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|submit.html.php)") { set $no_cache 1; }
+        if ($request_uri ~* "/(submit/|error.html.php)") { set $no_cache 1; }
+}
