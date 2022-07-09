@@ -141,7 +141,7 @@ Inside the go folder:
 go build core.go
 go build 1core.go
 </pre>
-If you eventually plan use replication servers or you are using a computer with a lot of available cores, you can use 'core'. 
+If you eventually plan to use replication servers or you are using a computer with a lot of available cores, you can use 'core'. 
 Alternately, if you dont intend to have a large index and do not plan on adding replication servers, you can use '1core'. 
 You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version 
 is used mainly for prototyping.
@@ -284,10 +284,10 @@ INSERT INTO accounts (name,hash,level) VALUES('your_username','your_password_has
 You can now access /accounts/ from your browser, login to create and manage all accounts for administrators and guardians of the search engine.
 <br>
 <br>
-<b>admin</b> - Can access all web forms for the search engine including the /accounts/ page to create and delete accounts.
+<b>admin</b> - Can access all web forms for the search engine and use the /accounts/ page to create and delete accounts.
 <br>
 <br>
-<b>guardian</b> - Can access all forms except the /accounts/ form. The main role of a guardian is to gatekeep the index of the search engine.
+<b>guardian</b> - The main role of a guardian is to gatekeep the index of the search engine. Can access all forms except for /readf/, and can only use the /accounts/ page to change their own password.
 <br>
 <br>
 <br>
@@ -402,9 +402,16 @@ This was the first form created back in late 2016 to populate the Wiby index and
 It is still useful if you want to manually index a page that refuses to permit the crawler to access it. In that case, set updatable to 0.
 <br>
 <br>
+<h3>/json/</h3>
+This is the JSON API developers can use to connect their services to the search engine. Instructions are located at that location.
+<br>
+<br>
 <h3>Additional Notes</h3>
 If you want to force a website to appear at the top rank for a specific single word query, (like "weather"), you can force it by adding "weather" to the tags column for the target url in the windex table. Use this sparingly. 
 There is no form to do this on an existing website, you will have to update the row in mysql manually.
+<br>
+<br>
+If you want to stop the web crawler in a situation where it was accidently queued to index an unlimited number of pages, first stop the crawler program, truncate the indexqueue table 'truncate indexqueue;', then restart the crawler.
 <br>
 <br>
 <br>
