@@ -1,4 +1,4 @@
-//HTMLparse
+//Wiby HTML Parser
 //Separates text from an HTML file
 //Remember to also set sql_mode = "NO_BACKSLASH_ESCAPES" in my.cnf 
 
@@ -200,7 +200,7 @@ void htmlparse(){
 		}						
 			
 			
-		if(titlefound != 1){
+		if(titlefound != 2){
 			//Ignore between scripts, styles, and remove all tags, repeated spaces, tabs, cr, lf, null, add a space at end of every tag
 			if(c=='<'){
 				intag = 1;
