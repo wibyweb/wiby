@@ -427,7 +427,7 @@ on line 365 and rebuild the core application.
 <br>
 The number of available replicas must divide evenly into the search results per page limit (lim), OR, the search results per page limit must divide evenly into the number of available replicas. If there 
 is an excess of available replicas such that they do not divide evenly, those will remain in synch but will not be used for searches unless another replica fails. You can adjust the search results per page limit (lim) to a different value (default 12), 
-and then rebuild to make the excess available replicas to divide evenly (if necessary).
+and then rebuild to make excess available replicas divide evenly (if necessary).
 <br>
 <br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
