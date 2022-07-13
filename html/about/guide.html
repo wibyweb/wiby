@@ -100,7 +100,7 @@ I can only provide manual install instructions at this time.
 <br>
 Note that while the software is functionally complete, it is still in beta. Anticipate that some bugs will be discovered now that the source is released. 
 Ensure that you isolate the search engine from your other important services, and if you are running parts of it out of your home, keep the servers 
-on a separate VLAN. Continue this practise even when the software reaches "1.0".
+on a separate VLAN. Make sure this VLAN cannot access your router or switch interface. Continue this practise even when the software reaches "1.0".
 <br>
 <br>
 If you have created a "LAMP", or rather a "LEMP" server before, this isn't much more complicated. If you've never done that, I suggest you find a "LEMP" tutorial.
@@ -141,10 +141,8 @@ Inside the go folder:
 go build core.go
 go build 1core.go
 </pre>
-If you eventually plan to use replication servers or you are using a computer with a lot of available cores, you can use 'core'. 
-Alternately, if you dont intend to have a large index and do not plan on adding replication servers, you can use '1core'. 
-You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version 
-is used mainly for prototyping.
+If you are just starting out, you can use '1core'. If you are going to setup replication servers or you are using a computer with a lot of available cores, you can use 'core', but make sure to read the scaling section. 
+You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version is used mainly for prototyping.
 <br>
 <br>
 <h3>Build the database:</h3>
@@ -261,8 +259,8 @@ If crawling through hyperlinks on a page, the following file types are accepted:
 <br>
 <br>
 <h3>Start the core server</h3>
-'1core' is fine to get started if you have a smaller index. Use 'core' if you intend to scale computer resources as the index grows. You don't necessarily have to run this if you would prefer to use the simple index.php version. 
-You may want to run the core server on startup with a cron job.
+If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have a lot of available CPU cores. Make sure to read the scaling section. 
+You can run the core server on startup with a cron job.
 <br>
 <br>
 <h3>Set Administrator Password for the Web Interface</h3>
@@ -427,8 +425,15 @@ drastically speeding up search speeds especially for multi-word queries. By defa
 on line 365 and rebuild the core application.
 <br>
 <br>
+The number of available replicas must divide evenly into the search results per page limit (lim), OR, the search results per page limit must divide evenly into the number of available replicas. If there 
+is an excess of available replicas such that they do not divide evenly, those will remain in synch but will not be used for searches unless another replica fails. You can adjust the search results per page limit (lim) to a different value (default 12), 
+and then rebuild to force the available replicas your have to divide evenly (if necessary).
+<br>
+<br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
-the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas. Full instructions below:
+the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas.
+<br><br>
+<b>Full instructions below:</b>
 <br>
 <br>
 On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own.
