@@ -526,7 +526,7 @@ Make sure that:
 Slave_IO_Running: Yes
 Slave_SQL_Running: Yes
 </pre>
-In MySQL on the replica:
+In MySQL on the replica, create the accounts required for the replication tracker and core application:
 <pre>
 use wiby;
 create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
