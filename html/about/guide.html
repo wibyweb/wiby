@@ -245,13 +245,13 @@ You may want to run this on startup, easiest way to set that is with a cron job 
 <br>
 <h3>Start the Crawler</h3>
 It is best to run the crawler in a screen session so that you can monitor its output. You can have more than one crawler running as long as you keep them in separate directories, include a symlink to the same robots folder, and also set the correct parameters on each. 
-To view the parameters, type './cr -h'. Without any parameters set, you can only run one crawler (which is probably all you need anyway).
+To view the parameters, type './cr -h'. Without any parameters set, you can only run one crawler (which is probably all you need anyway). If necessary, you can change the connection from 'localhost' to a different IP from inside cr.c, then rebuild.
 <br>
 <br>
 Note that you may need to change the crawler's user-agent if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
 <br> 
 <br>
-Make sure the robots folder exists. robots.txt files are stored in the robots folder and are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. 
+Make sure the robots folder exists. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. 
 You can turn off checking for robots.txt files by commenting out the line calling the "checkrobots" function inside of cr.c.
 <br>
 <br>
