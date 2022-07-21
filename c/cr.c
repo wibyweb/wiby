@@ -656,7 +656,8 @@ int main(int argc, char **argv)
 
 				int skip = 0, titlechanged = 0, escape = 0, escapetotal = 0, redirected = 0;
 				//Check if noindex and size
-				if(((noindex == 0 /*&& bodysize < 1900000*/ && bodysize > 10) || (noindex == 0 /*&& bodysize < 1900000*/ && descriptionsize > 10)) && response_code == 200 && alreadydone==0) 
+				//if(((noindex == 0 /*&& bodysize < 1900000*/ && bodysize > 10) || (noindex == 0 /*&& bodysize < 1900000*/ && descriptionsize > 10)) && response_code == 200 && alreadydone==0) 
+				if((emptytitle == 0 || descriptionsize > 0 || bodysize > 0) && response_code == 200 && alreadydone==0 && noindex == 0)
 				{
 					//=================Allocate memory for the parsed text from htmlparse()
 					//title = (char*)calloc(titlesize+1,sizeof(char));
