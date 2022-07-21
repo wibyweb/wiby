@@ -400,16 +400,16 @@ This was the first form created back in late 2016 to populate the Wiby index and
 It is still useful if you want to manually index a page that refuses to permit the crawler to access it. In that case, set updatable to 0.
 <br>
 <br>
+<h3>/tags/</h3>
+If you want to force a website to appear at the top rank for specific single word queries (like "weather"), you can force it by tagging the words to the target url.
+<br>
+<br>
 <h3>/json/</h3>
 This is the JSON API developers can use to connect their services to the search engine. Instructions are located at that location.
 <br>
 <br>
 <h3>Additional Notes</h3>
-If you want to force a website to appear at the top rank for a specific single word query, (like "weather"), you can force it by adding "weather" to the tags column for the target url in the windex table. Use this sparingly. 
-There is no form to do this on an existing website, you will have to update the row in mysql manually.
-<br>
-<br>
-If you want to stop the web crawler in a situation where it was accidently queued to index an unlimited number of pages, first stop the crawler program, truncate the indexqueue table 'truncate indexqueue;', then restart the crawler.
+If you need to stop the web crawler in a situation where it was accidently queued to index an unlimited number of pages, first stop the crawler program, truncate the indexqueue table 'truncate indexqueue;', then restart the crawler.
 <br>
 <br>
 <br>
