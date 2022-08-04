@@ -855,7 +855,7 @@ int main(int argc, char **argv)
 							printf("\nInserting into index... ");
 							char windexRandUpdate[1500];
 							memset (windexRandUpdate,0,1500);
-							if (mysql_query(con, "SELECT id FROM windex WHERE enable = 1 AND tags IS NULL ORDER BY rand() LIMIT 1;")) //must make sure tags are null, since tags are manually added by admin, not crawler, giving that row special visibility 
+							if (mysql_query(con, "SELECT id FROM windex WHERE enable = 1 ORDER BY rand() LIMIT 1;")) 
 							{
 							    finish_with_error(con);
 							}						
@@ -985,9 +985,11 @@ int main(int argc, char **argv)
 									strcat(windexupdate,"Untitled");
 								}
 							}
-							//strcat(windexupdate,"', tags = '");
-							//strcat(windexupdate,keywords);
-							strcat(windexupdate,"', description = '");
+							if(copiedRandom == 0)//normal update
+								strcat(windexupdate,"', description = '");
+							else{
+								strcat(windexupdate,"', tags = NULL, description = '");
+							}
 							strcat(windexupdate,description);
 							strcat(windexupdate,"', body = '");
 							strcat(windexupdate,body);	
