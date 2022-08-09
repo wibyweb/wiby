@@ -1,5 +1,7 @@
 <?php
-session_start();
+
+	session_set_cookie_params(['samesite' => 'Strict']);
+	session_start();
 
 	if ( !isset($_POST['pass']) || !isset($_POST['user']))    
 	{    
