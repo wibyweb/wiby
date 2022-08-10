@@ -5,12 +5,6 @@
 	{
 		include 'index.php';
 		exit();
-	}
-
-	if (isset($_POST['startid']) && $_SESSION["loadgraveyard"]==false)    
-	{    
-		$startID = $_POST['startid'];
-		$endID = $_POST['endid'];
 	}	
 	
 	$link = mysqli_connect('localhost', 'approver', 'foobar');
@@ -34,12 +28,18 @@
 	  include 'error.html.php'; 
 	  exit(); 
 	}
+	
+	if (isset($_POST['startid']) && $_SESSION["loadgraveyard"]==false)    
+	{    
+		$startID = mysqli_real_escape_string($link, $_POST['startid']);
+		$endID = mysqli_real_escape_string($link, $_POST['endid']);
+	}	
 
 	$lim = 100; //note, setting this too high will cause PHP Warning:  Unknown: Input variables exceeded 1000
 	
 	if (isset($_POST['startid']) && $_SESSION["loadgraveyard"]==false) //this is incase any new submissions are made during the review process, they will be ignored   
 	{  
-		$result = mysqli_query($link,"SELECT * FROM graveyard WHERE id >= $startID AND id <= $endID");
+		$result = mysqli_query($link,"SELECT * FROM graveyard WHERE id >= '".$startID."' AND id <= '".$endID."'");
 		if(!$result)
 		{
 		  $error = 'Error fetching index: ' . mysqli_error($link);  
@@ -120,7 +120,7 @@
 				$crawlpages = $_POST["crawlpages$pageid"];
 				$crawltype = $_POST["crawltype$pageid"];
 
-				$sql = 'INSERT INTO indexqueue (url,worksafe,approver,surprise,updatable,crawl_depth,crawl_pages,crawl_type,force_rules,crawl_repeat,crawler_id) VALUES ("'.$url[$i].'","'.$worksafe.'","'.$_SESSION["user"].'","'.$surprise.'","'.$updatable.'","'.$crawldepth.'","'.$crawlpages.'","'.$crawltype.'","'.$forcerules.'","'.$crawlrepeat.'","'.$crawler_id.'")';
+				$sql = "INSERT INTO indexqueue (url,worksafe,approver,surprise,updatable,crawl_depth,crawl_pages,crawl_type,force_rules,crawl_repeat,crawler_id) VALUES ('".$url[$i]."','".$worksafe."','".$_SESSION["user"]."','".$surprise."','".$updatable."','".$crawldepth."','".$crawlpages."','".$crawltype."','".$forcerules."','".$crawlrepeat."','".$crawler_id."')";
 				if (!mysqli_query($link, $sql))   
 				{
 					$error = 'Error inserting into indexqueue: ' . mysqli_error($link);  
