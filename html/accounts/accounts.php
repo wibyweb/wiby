@@ -79,7 +79,7 @@
 					$post_level = "admin";
 				}
 
-				$adminresult = mysqli_query($link,'INSERT INTO accounts (name,hash,level) VALUES("'.$post_name.'","'.$hash.'","'.$post_level.'")');
+				$adminresult = mysqli_query($link,"INSERT INTO accounts (name,hash,level) VALUES('".$post_name."','".$hash."','".$post_level."')");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -102,7 +102,7 @@
 
 			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
 
-				$adminresult = mysqli_query($link,'DELETE FROM accounts WHERE name = "'.$post_name.'"');
+				$adminresult = mysqli_query($link,"DELETE FROM accounts WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -126,7 +126,7 @@
 			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
 				$post_password = mysqli_real_escape_string($link, $_POST['password']);
 				$hash = password_hash($post_password, PASSWORD_DEFAULT);
-				$adminresult = mysqli_query($link,'UPDATE accounts SET hash = "'.$hash.'" WHERE name = "'.$post_name.'"');
+				$adminresult = mysqli_query($link,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -155,7 +155,7 @@
 					$post_level = "admin";
 				}
 
-				$adminresult = mysqli_query($link,'UPDATE accounts SET level = "'.$post_level.'" WHERE name = "'.$post_name.'"');
+				$adminresult = mysqli_query($link,"UPDATE accounts SET level = '".$post_level."' WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -178,7 +178,7 @@
 
 			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
 
-				$adminresult = mysqli_query($link,'UPDATE accounts SET attempts = 0 WHERE name = "'.$post_name.'"');
+				$adminresult = mysqli_query($link,"UPDATE accounts SET attempts = 0 WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -201,7 +201,7 @@
 
 		    	$post_name = mysqli_real_escape_string($link, $_POST['name']);
 
-				$adminresult = mysqli_query($link,'UPDATE accounts SET attempts = 5 WHERE name = "'.$post_name.'"');
+				$adminresult = mysqli_query($link,"UPDATE accounts SET attempts = 5 WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
 				  $error = 'Error fetching index: ' . mysqli_error($link); 
@@ -232,7 +232,7 @@
 			$post_password = mysqli_real_escape_string($link, $_POST['password']);
 			$hash = password_hash($post_password, PASSWORD_DEFAULT);
 
-			$result = mysqli_query($link,'UPDATE accounts SET hash = "'.$hash.'" WHERE name = "'.$_SESSION["user"].'"');
+			$result = mysqli_query($link,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$_SESSION["user"]."'");
 			if(!$result)
 			{
 				$error = 'Error fetching index: ' . mysqli_error($link); 
