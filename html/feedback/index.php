@@ -47,14 +47,14 @@
 		  exit(); 
 		}
  
-		$feedback = str_replace("\'", "\'\'", $_POST['feedback']); //single quotes must be handled correctly
-		$feedback = str_replace("\"", "\"\"", $feedback);//double quotes must be handled correctly
-	    	//$feedback = mysqli_real_escape_string($link, $_POST['feedback']);//doesn't read back properly
+		//$feedback = str_replace("\'", "\'\'", $_POST['feedback']); //single quotes must be handled correctly
+		//$feedback = str_replace("\"", "\"\"", $feedback);//double quotes must be handled correctly
+	    $feedback = mysqli_real_escape_string($link, $_POST['feedback']);
 
 		$feedback = substr($feedback,0,8000); //don't allow user to post a longer string than 8k (also limited in form)
 
 
-		$sql = 'INSERT INTO feedback (message) VALUES ("'.$feedback.'")';
+		$sql = "INSERT INTO feedback (message) VALUES ('".$feedback."')";
 
 
 		if (!mysqli_query($link, $sql))   
