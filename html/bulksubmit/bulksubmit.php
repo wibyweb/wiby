@@ -43,9 +43,9 @@
 	
 	$urls = $_POST['urls'];
 	$urls = mysqli_real_escape_string($link, $_POST['urls']);
-	$urls = str_replace("\"", "\"\"", $urls);	
+	//$urls = str_replace("\"", "\"\"", $urls);	
 	$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
-	$worksafe = str_replace("\"", "\"\"", $worksafe);	
+	//$worksafe = str_replace("\"", "\"\"", $worksafe);	
 	if($worksafe == 'on')
 	{
 		$worksafe = 1;
@@ -60,7 +60,7 @@
 		$i=0;
 		$url="";
 		$gotfirsturl=false;
-		$sql = 'INSERT INTO reviewqueue (url,worksafe) VALUES ';//("'.$url.'","'.$worksafe.'")';
+		$sql = "INSERT INTO reviewqueue (url,worksafe) VALUES ";
 		$gotURL=false;
 		$urls=str_replace("\r","",$urls);
 		$lenURLs=strlen($urls);
@@ -78,10 +78,10 @@
 			}				
 				//add to SQL statement
 				if($gotfirsturl==false){
-					$sql= $sql . '("'.$url.'","'.$worksafe.'")';
+					$sql= $sql . "('".$url."','".$worksafe."')";
 					$gotfirsturl=true;
 				}else{
-					$sql= $sql . ',("'.$url.'","'.$worksafe.'")';
+					$sql= $sql . ",('".$url."','".$worksafe."')";
 				}
 				$url='';
 			}
@@ -98,10 +98,10 @@
 			}			
 			//add to SQL statement
 			if($gotfirsturl==false){
-				$sql = $sql . '("'.$url.'","'.$worksafe.'")';
+				$sql = $sql . "('".$url."','".$worksafe."')";
 				$gotfirsturl=true;
 			}else{
-				$sql = $sql . ',("'.$url.'","'.$worksafe.'")';
+				$sql = $sql . ",('".$url."','".$worksafe."')";
 			}			
 		}
 		if (!mysqli_query($link, $sql))   
