@@ -50,11 +50,11 @@
 		  exit(); 
 		}
  
-	    	$url = mysqli_real_escape_string($link, $_POST['url']);
-		$url = str_replace("\"", "\"\"", $url);
+	    $url = mysqli_real_escape_string($link, $_POST['url']);
+		//$url = str_replace("\"", "\"\"", $url); //not needed if using single quotes for query
 		$url = substr($url,0,400); //don't allow user to post a longer url than 400b (also limited in form)
 		$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
-		$worksafe = str_replace("\"", "\"\"", $worksafe);
+		//$worksafe = str_replace("\"", "\"\"", $worksafe); 
 		
 		if($worksafe == 'on')
 		{
@@ -72,7 +72,7 @@
 		$url = str_replace("/index.html", "/", $url);
 		$url = str_replace("/index.htm", "/", $url);
 
-		$sql = 'INSERT INTO reviewqueue (url,worksafe) VALUES ("'.$url.'","'.$worksafe.'")';
+		$sql = "INSERT INTO reviewqueue (url,worksafe) VALUES ('".$url."','".$worksafe."')";
 
 
 		if (!mysqli_query($link, $sql))   
