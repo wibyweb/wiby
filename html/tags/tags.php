@@ -44,10 +44,10 @@
 		{
 			$tags = mysqli_real_escape_string($link, $_POST['tags']);
 			if($tags==""){
-				$result = mysqli_query($link,'UPDATE windex SET tags = NULL WHERE url = "'.$url.'";');
+				$result = mysqli_query($link,"UPDATE windex SET tags = NULL WHERE url = '".$url."';");
 			}
 			else{
-				$result = mysqli_query($link,'UPDATE windex SET tags = "'.$tags.'" WHERE url = "'.$url.'";');
+				$result = mysqli_query($link,"UPDATE windex SET tags = '".$tags."' WHERE url = '".$url."';");
 			}
 			if ($result === false)   
 			{
@@ -59,7 +59,7 @@
 			unset($_POST['tags']);
 		}		
 	    
-		$result = mysqli_query($link,'SELECT tags FROM windex WHERE url = "'.$url.'";');
+		$result = mysqli_query($link,"SELECT tags FROM windex WHERE url = '".$url."';");
 		if ($result === false)  
 		{
 		  $error = 'Error fetching index: ' . mysqli_error($link);  
