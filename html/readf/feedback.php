@@ -10,12 +10,7 @@
 		include 'index.php';
 		exit();
 	}
-
-	if (isset($_POST['startid']) && $_SESSION["loadfeedback"]==false)    
-	{    
-		$startID = $_POST['startid'];
-		$endID = $_POST['endid'];
-	}	
+	
 	$link = mysqli_connect('localhost', 'approver', 'foobar');
 
 	if (!$link)
@@ -38,12 +33,18 @@
 	  include 'error.html.php'; 
 	  exit(); 
 	}
+	
+	if (isset($_POST['startid']) && $_SESSION["loadfeedback"]==false)    
+	{    
+		$startID = mysqli_real_escape_string($link, $_POST['startid']);
+		$endID = mysqli_real_escape_string($link, $_POST['endid']);
+	}	
 
 	$lim = 10000000000;
 	
 	if (isset($_POST['startid']) && $_SESSION["loadfeedback"]==false) //this is incase any new submissions are made during the review process, they will be ignored   
 	{  
-		$result = mysqli_query($link,"SELECT * FROM feedback WHERE id >= $startID AND id <= $endID");
+		$result = mysqli_query($link,"SELECT * FROM feedback WHERE id >= '".$startID."' AND id <= '".$endID."'");
 		if(!$result)
 		{
 		  $error = 'Error fetching index: ' . mysqli_error($link);  
@@ -78,7 +79,7 @@
 
 			if($_POST["drop$pageid"] == 'on')
 			{
-				$result2 = mysqli_query($link,"DELETE FROM feedback WHERE id = $pageid");
+				$result2 = mysqli_query($link,"DELETE FROM feedback WHERE id = '".$pageid."'");
 				if(!$result2)
 				{
 				  $error = 'Error deleting from feedback: ' . mysqli_error($link);  
