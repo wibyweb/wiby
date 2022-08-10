@@ -42,11 +42,11 @@
 
 		if($delete == 'on')
 		{
-			$sql = 'DELETE FROM windex WHERE url = "'.$url.'"';
+			$sql = "DELETE FROM windex WHERE url = '".$url."'";
 		}
 		else
 		{
-			$sql = 'UPDATE windex SET enable = 0 WHERE url = "'.$url.'"';
+			$sql = "UPDATE windex SET enable = 0 WHERE url = '".$url."'";
 		}
 
 		if (!mysqli_query($link, $sql))   
