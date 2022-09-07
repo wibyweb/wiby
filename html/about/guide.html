@@ -508,13 +508,19 @@ UNLOCK TABLES;
 </pre>
 You can now close that window if you want.
 <br>
-On the replica server, import the database:
+<br>
+On the replica server, login to mysql and create the database:
+<pre>
+CREATE DATABASE wiby;
+EXIT;
+</pre>
+Import the database:
 <pre>
 mysql -u root -p wiby < wiby.sql
 </pre>
-Login to MySQL and type the following but replace the IP, MASTER_LOG_FILE, and MASTER_LOG_POS with yours from the table:
+Login to MySQL and type the following but replace the primary_server_ip, MASTER_LOG_FILE, and MASTER_LOG_POS with yours from the table:
 <pre>
-CHANGE MASTER TO MASTER_HOST='primary.server.ip',MASTER_USER='slave_user', MASTER_PASSWORD='d0gemuchw0w', MASTER_LOG_FILE='mysql-bin.000055', MASTER_LOG_POS=15871269;
+CHANGE MASTER TO MASTER_HOST='primary_server_ip',MASTER_USER='slave_user', MASTER_PASSWORD='d0gemuchw0w', MASTER_LOG_FILE='mysql-bin.000055', MASTER_LOG_POS=15871269;
 START SLAVE;
 </pre>
 To verify that the replica is syncronized, type the following on the replica in MySQL:
