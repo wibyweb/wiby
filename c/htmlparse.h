@@ -85,15 +85,15 @@ void htmlparse(){
 	for(int i=0;i<fsize;i++){
 		c = fileStr[i];
 		
-		//use a rolling window of 100 bytes to detect elements, ignore lf/cr/space/null/tab
-		if(c!= 10 && c != 13 && c != 32 && c != 0 && c != 9){
+		//use a rolling window of 100 bytes to detect elements, ignore control characters
+		if(c != 32 && c > 16){
 			for(int j=0;j<window_len-1;j++){
 				window[j] = window[j+1];
 			}
 			window[window_len-1] = c;
 		}
-		//use a rolling window of 100 bytes to detect elements, but permit space, ignore lf/cr/null/tab
-		if(c!= 10 && c != 13 && c != 0 && c != 9){
+		//use a rolling window of 100 bytes to detect elements, but permit space, ignore control characters
+		if(c > 16){
 			for(int j=0;j<window_len-1;j++){
 				windowWithSpaces[j] = windowWithSpaces[j+1];
 			}
@@ -102,14 +102,14 @@ void htmlparse(){
 		
 		//Get Title
 		if(titlefound == 2){
-			if(titlesize < (title_len-2) && c!= 10 && c != 13 && c != 0 && c != 9){
+			if(titlesize < (title_len-2) && c > 16){
 				title[titlesize]=c;
 				titlesize++;
 				if(c == 39){//check for single quotes and double them up for sql safety
 					title[titlesize]=c;
 					titlesize++;
 				}
-				if(c != 32 && c != 13 && c != 12 && c != 10 && c != 9){//some titles are just a bunch of spaces or garbage, need to check for that
+				if(c != 32 && c > 16){//some titles are just a bunch of spaces or garbage, need to check for that
 					emptytitle = 0;
 				}				
 			}
@@ -239,8 +239,8 @@ void htmlparse(){
 			}
 
 			//Get Body
-			//exclude remaining tags, comments, scripts, styles, cr, lf, null, tab, add a space after a '>' but only allow one
-			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  c!= 13 && c != 10 && c != 0 && c != 9 && bodysize < (body_len-2)){
+			//exclude remaining tags, comments, scripts, styles, control characters, add a space after a '>' but only allow one
+			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  c > 16 && bodysize < (body_len-2)){
 				if(putspace == 1){
 					if(spacecount == 0){
 						body[bodysize]=32;
