@@ -85,15 +85,15 @@ void htmlparse(){
 	for(int i=0;i<fsize;i++){
 		c = fileStr[i];
 		
-		//use a rolling window of 100 bytes to detect elements, ignore control characters
-		if(c != 32 && c > 16){
+		//use a rolling window of 100 bytes to detect elements, ignore control characters and spaces
+		if(c != 127 && c > 32){
 			for(int j=0;j<window_len-1;j++){
 				window[j] = window[j+1];
 			}
 			window[window_len-1] = c;
 		}
 		//use a rolling window of 100 bytes to detect elements, but permit space, ignore control characters
-		if(c > 16){
+		if(c != 127 && c > 31){
 			for(int j=0;j<window_len-1;j++){
 				windowWithSpaces[j] = windowWithSpaces[j+1];
 			}
@@ -102,14 +102,14 @@ void htmlparse(){
 		
 		//Get Title
 		if(titlefound == 2){
-			if(titlesize < (title_len-2) && c > 16){
+			if(titlesize < (title_len-2) && c != 127 && c > 31){
 				title[titlesize]=c;
 				titlesize++;
 				if(c == 39){//check for single quotes and double them up for sql safety
 					title[titlesize]=c;
 					titlesize++;
 				}
-				if(c != 32 && c > 16){//some titles are just a bunch of spaces or garbage, need to check for that
+				if(c != 127 && c > 32){//some titles are just a bunch of spaces or garbage, need to check for that
 					emptytitle = 0;
 				}				
 			}
@@ -240,7 +240,7 @@ void htmlparse(){
 
 			//Get Body
 			//exclude remaining tags, comments, scripts, styles, control characters, add a space after a '>' but only allow one
-			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  c > 16 && bodysize < (body_len-2)){
+			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 && c != 127 && c > 31 && bodysize < (body_len-2)){
 				if(putspace == 1){
 					if(spacecount == 0){
 						body[bodysize]=32;
