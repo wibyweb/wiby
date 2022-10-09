@@ -10,8 +10,9 @@
     <p>Use https://domain/json/ to get a JSON output of search results.<br><br>
     Example: <a href="https://domain/json/?q=test">https://domain/json/?q=test</a> outputs results for the query 'test'.<br><br> 
     Append the parameter &o=NUM to get the next page of results.<br>
-    To determine the value of NUM, look for the presence of <b>NextOffset</b> at the end of the JSON data.<br>
-    Example: <a href="https://domain/json/?q=test&o=12">https://domain/json/?q=test&o=12</a>
+    To determine the value of NUM, look for the presence of <b>NextOffset</b> at the end of the JSON data.<br><br>
+    Example: <a href="https://domain/json/?q=test&o=12">https://domain/json/?q=test&o=12</a><br><br>
+    Append the parameter &nsfw to include results that are marked as not safe for work.
 	<br><br><b>Terms of Use:
 	<br>1. Set terms here.
     </b></p>
