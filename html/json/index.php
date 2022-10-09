@@ -34,6 +34,11 @@ else
 	$starappend = 0;
 
 	$startID = 0;
+	
+	if(isset($_REQUEST['nsfw']))
+	{
+		$worksafe = false;
+	}
 
 	if (!isset($_REQUEST['o'])) 
 	{
