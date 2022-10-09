@@ -876,7 +876,15 @@ func JSONRealEscapeString(value string) string {
 		value = strings.Replace(value, b, a, -1)
 	}
 
-	return value
+	//remove control characters
+	buf := []rune(value)
+	for i, v := range buf {
+		if v < 32 || v == 127 {
+			buf[i]=32
+		}
+	}
+
+	return string(buf)
 }
 func substr(s string, start int, end int) string {
 	start_str_idx := 0
@@ -938,39 +946,3 @@ func searchredirect(w http.ResponseWriter, r *http.Request, query string) {
 		}*/
 	}
 }
-
-/*func caseInsenstiveContains(fullstring, substring string) bool {
-  return strings.Contains(strings.ToLower(fullstring), strings.ToLower(substring))
-}*/
-
-/*
-A QueryString is, by definition, in the URL. You can access the URL of the request using req.URL (doc). The URL object has a Query() method (doc) that returns a Values type, which is simply a map[string][]string of the QueryString parameters.
-
-If what you're looking for is the POST data as submitted by an HTML form, then this is (usually) a key-value pair in the request body. You're correct in your answer that you can call ParseForm() and then use req.Form field to get the map of key-value pairs, but you can also call FormValue(key) to get the value of a specific key. This calls ParseForm() if required, and gets values regardless of how they were sent (i.e. in query string or in the request body).
-
-req.URL.RawQuery returns everything after the ? on a GET request, if that helps.
-*/
-
-/*import (
-  "net/http"
-)
-
-func main() {
-  http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./"))))
-  if err := http.ListenAndServe(":8080", nil); err != nil {
-    panic(err)
-  }
-}*/
-
-/*func handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "%s %s %s \n", r.Method, r.URL, r.Proto)
-    //Iterate over all header fields
-    for k, v := range r.Header {
-        fmt.Fprintf(w, "Header field %q, Value %q\n", k, v)
-    }
-
-    fmt.Fprintf(w, "Host = %q\n", r.Host)
-    fmt.Fprintf(w, "RemoteAddr= %q\n", r.RemoteAddr)
-    //Get value for a specified token
-    fmt.Fprintf(w, "\n\nFinding value of \"Accept\" %q", r.Header["Accept"])
-}*/
