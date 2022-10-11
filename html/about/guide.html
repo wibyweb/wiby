@@ -103,18 +103,27 @@ on a separate VLAN. Make sure this VLAN cannot access your router or switch inte
 If you have created a "LAMP", or rather a "LEMP" server before, this isn't much more complicated. If you've never done that, I suggest you find a "LEMP" tutorial.
 <br><br>
 <h3>Build a LEMP server</h3>
-Digital Ocean tutorials are usually pretty good so <a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-20-04">here's a link to one</a>.
+Digital Ocean tutorials are usually pretty good so here is a link to one for <a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-20-04">Ubuntu 20</a> and 
+<a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-22-04">Ubuntu 22</a>.
 <br>
 <br>
-For the sake of simplicity, assume all instructions are for Ubuntu 20.04. If you are on a different distro, modify the install steps accordingly to suit your distro.
+For the sake of simplicity, assume all instructions are for Ubuntu 20 or 22. If you are on a different distro, modify the install steps accordingly to suit your distro.
+<br>
 <br>
 If you don't have a physical server, you can rent computing space by looking for a "VPS provider". This virtual computer will be your reverse proxy, and if you want, it can host everything else too.
 <br>
 <br>
 <h3>Install the following additional packages:</h3>
 <pre>apt install build-essential php-gd libcurl4-openssl-dev libmysqlclient-dev mysql-server golang git
-go get -u github.com/go-sql-driver/mysql</pre>
 
+For Ubuntu 20:
+go get -u github.com/go-sql-driver/mysql
+
+For Ubuntu 22 or latest Golang versions:
+go install github.com/go-sql-driver/mysql@latest
+go mod init mysql
+go get github.com/go-sql-driver/mysql
+</pre>
 <br>
 <h3>Get Wiby Source Files</h3>
 Download the source directly from Wiby <a href="/download/wibysource.zip">here</a>, or from <a href="https://github.com/wibyweb/wiby/">GitHub</a>. The source is released under the GPLv2 license. Copy the source files for Wiby to your server.
@@ -232,7 +241,7 @@ You should learn nginx configuration on your own, this template is just to assis
 If you are using only the php version, comment all "core app" location entries to revert Wiby search to the php only version.
 <br>
 Make sure ssl_certificate and ssl_certificate_key have the path for your SSL files instead of the example paths. If you don't want to use SSL, just remove the server {} configuration for SSL connections (on port 443). 
-Also the example file references php7.4-fpm.sock, so if you are using a different version remember to update that as well.
+Also the example file references php7.4-fpm.sock, so if you are using a different version remember to update that as well (such as  php8.1-fpm.sock on Ubuntu 22).
 <br>
 <br>
 <h3>Start the Refresh Scheduler</h3>
