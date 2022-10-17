@@ -5,9 +5,5 @@
     "Title": "{{.Title}}",
     "Snippet": "{{.Body}}",
     "Description": "{{.Description}}"
-  }{{end}}{{if .FindMore }},
-  {
-    "NextOffset": "{{.Totalcount}}"
-  }
-{{end}}
+  }{{end}}
 ]
