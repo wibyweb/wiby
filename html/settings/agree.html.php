@@ -25,7 +25,7 @@
     <form action="" method="post">  
       <div>I agree to the terms and conditions (check and submit)<input type="checkbox" id="agree" name="agree"> <input type="submit" value="Submit"/></div>   
       <br><br>
-      <a href="/">Return to Wiby search</a>    
+      <a href="/">Return to search</a>    
     </form>    
 
   </body>    
