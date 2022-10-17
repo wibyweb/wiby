@@ -24,7 +24,7 @@
     {{end}}
     
     {{if .FindMore }}
-        <p class="pin"><blockquote></p><br><a class="more" href="/?q={{.Query}}&o={{.Totalcount}}">Find more...</a></blockquote>
+        <p class="pin"><blockquote></p><br><a class="more" href="/?q={{.Query}}&p={{.Totalcount}}">Find more...</a></blockquote>
     {{else}}
         <blockquote><p class="pin"> <br>That's everything I could find.<br>Help make me smarter by <a class="pin1" href="/submit">submitting a page</a>.</p></blockquote>
     {{end}}
