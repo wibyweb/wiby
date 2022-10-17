@@ -13,10 +13,6 @@
     "Snippet": "<?php echo $bodymatch[$i]; ?>",
     "Description": "<?php echo $description[$i]; $i++; ?>"
   }<?php if ($i<sizeof($url)): ?>,
-<?php endif ?><?php endforeach; ?><?php if($i >= $lim && $starappend == 0): ?>,
-  { 
-    "NextOffset": "<?php echo $totalcount;?>"
-  }
-<?php endif; ?>
+<?php endif ?><?php endforeach; ?>
 
 ]
