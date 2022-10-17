@@ -33,7 +33,7 @@
 		</blockquote>  
     <?php endforeach; ?>  
     <?php if($i >= $lim && $starappend == 0): ?> 
-        <p class="pin"><blockquote></p><br><a class="tlink" href="/?q=<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?>&o=<?php echo $totalcount;?>">Find more...</a></blockquote>
+        <p class="pin"><blockquote></p><br><a class="tlink" href="/?q=<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?>&p=<?php echo $totalcount;?>">Find more...</a></blockquote>
     <?php else: ?>
         <blockquote><p class="pin"> <br>That's everything I could find.<br>Help make me smarter by <a class="pin1" href="/submit">submitting a page</a>.</p></blockquote>
     <?php endif; ?>

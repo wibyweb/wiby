@@ -121,13 +121,18 @@ else
 		$additions = $additions."AND url LIKE '%".$site."%' ";
 	}
 
-	if (!isset($_REQUEST['o'])) 
+	if (!isset($_REQUEST['p'])) 
 	{
 		$offset=0;
 	}
 	else
 	{
-		$offset = mysqli_real_escape_string($link, $_GET['o']);
+		$page = mysqli_real_escape_string($link, $_GET['p']);
+		if($page > 0)
+		{
+			$page--;
+		}
+		$offset = $page * $lim;
 	}
 	
 	if (!$link)
@@ -442,7 +447,7 @@ else
 	}
 
 	$row = null;
-	$totalcount = $count + $offset;
+	$totalcount = (($count + $offset)/$lim)+1;
 
         include 'results.html.php';    
 }    
