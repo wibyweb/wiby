@@ -85,13 +85,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	offset := "0"
 
-	//Check if query and offset params exist
+	//Check if query and page params exist
 	if _, ok := m["q"]; ok {
 		query = strings.Replace(m["q"][0], "'", "''", -1)
 		queryNoQuotes = m["q"][0]
 	}
-	if _, ok := m["o"]; ok {
-		offset = strings.Replace(m["o"][0], "'", "''", -1)
+	if _, ok := m["p"]; ok {//gets page num, will convert to offset further down
+		offset = strings.Replace(m["p"][0], "'", "''", -1)
 	}
 
 	lim := "12"
@@ -119,8 +119,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			offset = "0"
 			offsetInt = 0
 		}
-		//Convert lim to number also
+
+		//Convert lim to number
 		limInt, _ := strconv.Atoi(lim)
+
+		//convert page num to offset
+		if offsetInt > 0 {
+			offsetInt --;
+		}
+		offsetInt = offsetInt * limInt
+		offset = strconv.Itoa(offsetInt)
+		
 
 		//get some details from the raw query
 		var additions string
@@ -677,7 +686,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			res.FindMore = false
 		}
 
-		totalCountInt := count + offsetInt
+		totalCountInt := ((count + offsetInt)/limInt)+1;
 		res.Totalcount = strconv.Itoa(totalCountInt)
 		res.Query = m["q"][0] //get original unsafe query
 
