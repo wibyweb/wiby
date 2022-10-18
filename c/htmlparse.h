@@ -86,7 +86,7 @@ void htmlparse(){
 		c = fileStr[i];
 		
 		//use a rolling window of 100 bytes to detect elements, ignore control characters and spaces
-		if(c != 127 && c > 15){
+		if(c != 127 && c > 15 && c !=32){
 			for(int j=0;j<window_len-1;j++){
 				window[j] = window[j+1];
 			}
