@@ -74,22 +74,6 @@ else
 	  include 'error.html.php'; 
 	  exit(); 
 	}
-
-	//perform exact search
-/*	if($_SESSION["worksafe"]==true)
-	{
-		$output = mysqli_query($link,"SELECT id, url, title, description, body, FROM windex WHERE body LIKE '%$query%' AND enable = '1' AND worksafe = '1' AND id > $lastID OR description LIKE '%$query%' AND enable = '1' AND worksafe = '1' AND id > $lastID OR title LIKE '%$query%' AND enable = '1' AND worksafe = '1' AND id > $lastID OR url LIKE '%$query%' AND enable = '1' AND worksafe = '1' AND id > $lastID DESC LIMIT $lim");
-	}
-	else
-	{
-		$output = mysqli_query($link,"SELECT id, url, title, description, body, FROM windex WHERE body LIKE '%$query%' AND enable = '1' AND id > $lastID OR description LIKE '%$query%' AND enable = '1' AND id > $lastID OR title LIKE '%$query%' AND enable = '1' AND id > $lastID OR url LIKE '%$query%' AND enable = '1' AND id > $lastID DESC LIMIT $lim");
-	}		
-	if(!$output)
-	{
-	  $error = 'Error ' . mysqli_error($link);  
-	  include 'error.html.php';  
-	  exit(); 
-	}*/
 	
 	//Check if query is a url (contains http:// or https:// and no spaces). If so, put quotations around to to get an exact match
 	$urlDetected = 0;
@@ -100,14 +84,18 @@ else
 		$urlDetected = 1;
 	}
 
-	//it was made safe for sql, now put it back to the way it was and use htmlspecialchars on results page
-	$query = $_GET['q'];
 	//did user manually set -https instead of settings cookie?
 	if(substr($query,-7) == " -https"){
 		$filterHTTPS = true;
 		$query = substr($query, 0,-7);	
 	}
 	$queryNoQuotes = $query;
+	
+	//if query is just 1 or 2 letters, help make it work. Also CIA :D
+	if(strlen($query) < 3 || $query == "cia" || $query == "CIA"){
+		$query = " ".$query." *";
+	}
+	$queryNoQuotes = $query;	
 
 	//Are there quotes in the query?
 	$exactMatch = false;
@@ -171,7 +159,7 @@ else
 		}
 	}
 
-	//Check if query contains a hyphenated word. MySQL doesn't handle them smartly. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
+	//Check if query contains a hyphenated word. MySQL is finicky about them. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
 	if((strpos($queryNoQuotes,'-') !== false || strpos($queryNoQuotes,'+') !== false) && $urlDetected == false){
 		if($query == "c++" || $query == "C++"){//shitty but works
 			$query = "c++ programming";
@@ -195,32 +183,16 @@ else
 		}	
 	}
 
-	
-	//make query safe for sql again
-	$query = mysqli_real_escape_string($link, $query);
-
-	//perform full text search FOR InnoDB STORAGE ENGINE ONLY! DO NOT USE FOR MyISAM
-	if($filterHTTPS == false){
-		if($worksafe == true)
-		{
-			$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' AND worksafe = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-		}
-		else
-		{
-			$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-		}
+	if($filterHTTPS == true){
+		$additions = $additions."AND http = '1' ";
 	}
-	else
-	{
-		if($worksafe == true)
-		{
-			$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' AND worksafe = '1' AND http = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-		}
-		else
-		{
-			$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' AND http = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-		}
-	}	
+	if($worksafe == true){
+		$additions = $additions."AND worksafe = '1' ";
+	}
+	
+	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
+	$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
+	
 	/*if(!$outputFTS)//dont error out yet, will give another try below
 	{
 	  $error = 'Error ' . mysqli_error($link);  
@@ -238,34 +210,18 @@ else
 	{
 		$starappend = 1;
 		$querystar = $query;
-		$querystar = str_replace('*', "",$querystar);//innodb will get fussy over some things if put in like '''' or ****
+		//innodb will get fussy over some things if put in like '''' or ****, uncomment below lines if using innoDB
+		$querystar = str_replace('*', "",$querystar);
 		$querystar = str_replace('"', "",$querystar);
 		$querystar = str_replace('"', "",$querystar);
 		$querystar = str_replace('\'', "",$querystar);
+		//-----------------------------------------------
+		
 		$querystar = $querystar . '*';
 
-		//perform full text search FOR InnoDB STORAGE ENGINE ONLY! DO NOT USE FOR MyISAM
-		if($filterHTTPS == false){
-			if($worksafe == true)
-			{
-				$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' AND worksafe = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-			}
-			else
-			{
-				$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-			}
-		}
-		else
-		{
-			if($worksafe == true)
-			{
-				$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' AND worksafe = '1' AND http = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-			}
-			else
-			{
-				$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' AND http = '1' ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
-			}
-		}
+		//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
+
 		if(!$outputFTS)
 		{
 		  $error = 'Error ' . mysqli_error($link);  
@@ -274,46 +230,10 @@ else
 		}		
 	}
 
-
 	$count = 0;
 
 	//it was made safe for sql, now put it back to the way it was and use htmlspecialchars on results page
 	$query = $_GET['q'];
-
-	//Are there quotes in the query?
-	$exactMatch = false;
-	if(preg_match('/"/',$query) == true)
-	{
-		$exactMatch = true;
-		$queryNoQuotes = $query;
-	}
-	
-	//alright then lets remove the quotes
-	if($exactMatch == true)
-	{
-		while(preg_match('/"/',$queryNoQuotes) == true)
-		{
-			$queryNoQuotes = str_replace('"', "",$queryNoQuotes);
-		}
-	}
-
-	if($exactMatch == false)
-	{
-		//find longest word in query 	
-		$words  = explode(' ', $query);
-		$longestWordLength = 0;
-		$longestWord = '';
-		$wordcount = 0;
-		$longestwordelementnum = 0;
-		foreach ($words as $word) {
-		   if (strlen($word) > $longestWordLength) {
-		      $longestWordLength = strlen($word);
-		      $longestWord = $word;
-		      $longestwordelementnum = $wordcount;
-		   }
-		   $wordcount++;
-		}
-	}
 
 	//this will get set if position of longest word of query is found within body
 	$pos = -1;
