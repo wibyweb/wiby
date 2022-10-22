@@ -240,7 +240,7 @@ else
 		}
 	}
 
-	//Check if query contains a hyphenated word. MySQL doesn't handle them smartly. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
+	//Check if query contains a hyphenated word. MySQL is finicky about them. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
 	if((strpos($queryNoQuotes,'-') !== false || strpos($queryNoQuotes,'+') !== false) && $urlDetected == false){
 		if($query == "c++" || $query == "C++"){//shitty but works
 			$query = "c++ programming";
@@ -272,7 +272,7 @@ else
 	}
 	
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-	$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
+	$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 15 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
 
 	/*if(!$outputFTS)//dont error out yet, will give another try below
 	{
@@ -301,7 +301,7 @@ else
 		$querystar = $querystar . '*';
 
 		//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 14 END DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN LOCATE('$queryNoQuotes_SQLsafe', body)>0 THEN 15 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
 
 		if(!$outputFTS)
 		{
