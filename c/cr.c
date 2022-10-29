@@ -405,7 +405,7 @@ int main(int argc, char **argv)
 					curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 55L);					
 					curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);//max num of redirects
 					curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, 5000000L);//don't download if over 5MB
-					curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);//0 or 1 to verify ssl
+					curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);//0 or 1 to verify ssl
 					//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);//set verbose
 					res = curl_easy_perform(curl);// get it! 
 					//if(res == CURLE_OK) {//get final redirect url //-- don't check for this, causes segfault if "transfer closed with outstanding read data remaining"
