@@ -17,7 +17,7 @@
 
       <?php echo $output; ?>
       <br><br>
-      <a href="/bulksubmit/bulksubmit.php">Return to bulk submission page</a>
+      <a href="bulksubmit.php">Return to bulk submission page</a>
       <br><br>
       <a href="/">Return to wiby</a>    
 
