@@ -1,6 +1,8 @@
-//Wiby slave replication server tracker
+//Wiby replication server tracker
 //Admin creates file 'servers.csv' containing only IP and database name, one per line
-//Tracker will check status of slave databases by attempting to connect to all listed every few seconds
+//When executing, include the expected number of search results per page (eg: ./rt 12) so that a
+//divisible list of available servers is allocated to the core application by the tracker.
+//Tracker will check status of replica databases by attempting to connect to all listed every few seconds
 //Tracker will create a copy of this file called 'res.csv' and display only the confirmed online servers
 //as well as ID ranges divided across all servers so each has the same number of rows.
 
@@ -38,11 +40,30 @@ void handle_error(MYSQL *con)
 	fclose(error);
 	mysql_close(con);
 }
+int isnum(char *source){
+	int sourcelength = strlen(source);
+	for(int i=0;i < sourcelength; i++){		
+		if(source[i] < 48 || source[i] > 57){
+			return 0;
+		}	
+	}
+	return 1;
+}
 
 int main(int argc, char **argv)
 {
-	int timetest=0,reportinit=0,running=0;
-	printf("\nStarting Replication Tracker:\n\nConnection Latency\n--------------------------------\n");
+	int timetest=0,reportinit=0,running=0,pagelim=12;
+	if(argc == 2 && isnum(argv[1])==1){	
+		pagelim=atoi(argv[1]);
+		printf("\nStarting Replication Tracker:\n--------------------------------");
+	}else{
+		printf("\nStarting Replication Tracker:\n--------------------------------");
+		printf("\n\nNo page limit was set, will use a default of 12.\n\nUsage: rt page_limit\n\nWhere page_limit is the expected number of search results per page.");
+		printf("\nMake sure you have setup servers.csv, see the install guide for more info.");
+	}
+
+	printf("\n\nConnection Latency\n--------------------------------\n");
+
 	while(1)
 	{
 		long bytecount=0;
@@ -97,6 +118,7 @@ int main(int argc, char **argv)
 		memset(resfiletext,0,10000);
 
 		//conect to each listed server and verify it works
+		int last=0;
 		for (i=0;i<serverCount;i++){
 			int err = 0;
 			MYSQL *con = mysql_init(NULL);
@@ -124,6 +146,7 @@ int main(int argc, char **argv)
 			if(err==0){//append successful connection info to res string
 				strcpy(ipOK[onlineServers],ip[i]);
 				strcpy(dbOK[onlineServers],db[i]);
+				last=i;
 				onlineServers++;
 				mysql_close(con);
 			}
@@ -133,9 +156,25 @@ int main(int argc, char **argv)
 		//get more database info needed for distributed queries
 		//--------------------------------------------------------------------------------------------------------------------
 
-		// connect to first available slave server and get info needed for all available slaves to handle a distributed query
+		//calculate how many servers can be used, which must be divisible to or by the search results per page limit.
+		int coreAssigned=onlineServers;
+		if(pagelim == onlineServers || onlineServers==0){
+			//do nothing
+		}else if(pagelim>onlineServers){
+			//compute number of servers to harness
+			while(pagelim % coreAssigned != 0){
+				coreAssigned--;
+			}
+		}else if(pagelim<onlineServers){
+			//compute number of servers to harness
+			while(coreAssigned % pagelim != 0){
+				coreAssigned--;
+			}
+		}
+
+		// connect to last available slave server and get info needed for all available (coreAssigned) slaves to handle a distributed query
 		int initialinfo = 0, nRows=0;
-		for (i=0;i<onlineServers;i++){
+		for (i=0;i<coreAssigned;i++){
 			int err = 0, startIDint=0;
 			long long int numrows=0;
 			MYSQL *con = mysql_init(NULL);
@@ -145,7 +184,7 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 			mysql_options(con,MYSQL_OPT_CONNECT_TIMEOUT,&timeout);
-			if (mysql_real_connect(con, ipOK[0], "remote_guest", "d0gemuchw0w", dbOK[0], 0, NULL, 0) == NULL) //connect to the same server each iteration
+			if (mysql_real_connect(con, ipOK[last], "remote_guest", "d0gemuchw0w", dbOK[last], 0, NULL, 0) == NULL) //connect to the last online server each iteration
 			{
 				handle_error(con);
 				err=1;
@@ -193,7 +232,7 @@ int main(int argc, char **argv)
 				}
 
 				//Get id of last row of the % of the db you want to search (depending on # of slaves)
-				numrows = (nRows / onlineServers * i) + (nRows / onlineServers) - 1;
+				numrows = (nRows / coreAssigned * i) + (nRows / coreAssigned) - 1;
 				//printf("\n%lld",numrows);fflush(stdout); 
 				sprintf(totalRows, "%lld", numrows);//convert int to string
 				strcpy(strSQL,"SELECT id FROM windex ORDER BY id LIMIT ");
@@ -213,7 +252,7 @@ int main(int argc, char **argv)
 				MYSQL_ROW row = mysql_fetch_row(result2);
 
 				//store endID and startID
-				if(i+1 != onlineServers)
+				if(i+1 != coreAssigned)
 					strcpy(endID[i],row[0]);
 				else 
 					strcpy(endID[i],lastID);
@@ -227,7 +266,7 @@ int main(int argc, char **argv)
 				}
 				if(reportinit==0){
 					printf("\n%s %s | %s %s",ipOK[i],dbOK[i],startID[i],endID[i]);
-					if(i+1 == onlineServers)
+					if(i+1 == coreAssigned)
 						printf("\n\n");
 					fflush(stdout);
 				}
@@ -303,4 +342,3 @@ int main(int argc, char **argv)
 		sleep(5);
 	}
 }
-
