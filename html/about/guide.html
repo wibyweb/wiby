@@ -429,7 +429,7 @@ drastically speeding up search speeds especially for multi-word queries. By defa
 on line 373 and rebuild the core application.
 <br>
 <br>
-The search results per page limit must evenly divide 'into' OR 'by' the total number of connections defined in servers.csv. If there is an excess of available replicas such that 
+The search results per page limit must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
 they do not divide evenly, those will remain in sync but will not be used for searches unless another replica fails. You can adjust the search results per page limit ('lim' inside core.go) to a different value (default 12), 
 then rebuild core.go and restart rt. Include the new page limit when you run rt since it is no longer default (eg for a limit of 10: './rt 10') to make excess available replicas divide evenly (if necessary).
 <br>
