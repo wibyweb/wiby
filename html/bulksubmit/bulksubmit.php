@@ -43,7 +43,7 @@
 	
 	$urls = $_POST['urls'];
 	$urls = mysqli_real_escape_string($link, $_POST['urls']);
-	//$urls = str_replace("\"", "\"\"", $urls);	
+	$urls = str_replace("''", "%27", $urls);	
 	$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
 	//$worksafe = str_replace("\"", "\"\"", $worksafe);	
 	if($worksafe == 'on')
