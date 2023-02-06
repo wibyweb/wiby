@@ -46,9 +46,9 @@ Wiby is a search engine for the World Wide Web. The source code is now free as o
 It includes a web interface allowing guardians to control where, how far, and how often it crawls websites and follows hyperlinks. The search index is stored inside of a MySQL full-text index.
 <br>
 <br>
-Fast queries are maintained by concurrently reading different sections of the index across multiple replication servers or across duplicate server connections, returning a list of top results from each connection, 
+Fast queries are maintained by concurrently searching different sections of the index across multiple replication servers or across duplicate server connections, returning a list of top results from each connection, 
 then searching the combined list to ensure correct ordering. Replicas that fail are automatically excluded; new replicas are easy to include. 
-As new pages are crawled, they are stored randomly across the index, ensuring each replica can obtain relevant results.<br>
+As new pages are crawled, they are stored randomly across the index, ensuring each search section can obtain relevant results.<br>
 <br>
 The search engine is not meant to index the entire web and then sort it with a ranking algorithm. 
 It prefers to seed its index through human submissions made by guests, or by the guardian(s) of the search engine. 
@@ -114,16 +114,7 @@ If you don't have a physical server, you can rent computing space by looking for
 <br>
 <br>
 <h3>Install the following additional packages:</h3>
-<pre>apt install build-essential php-gd libcurl4-openssl-dev libmysqlclient-dev mysql-server golang git
-
-For Ubuntu 20:
-go get -u github.com/go-sql-driver/mysql
-
-For Ubuntu 22 or latest Golang versions:
-go install github.com/go-sql-driver/mysql@latest
-go mod init mysql
-go get github.com/go-sql-driver/mysql
-</pre>
+<pre>apt install build-essential php-gd libcurl4-openssl-dev libmysqlclient-dev mysql-server golang git</pre>
 <br>
 <h3>Get Wiby Source Files</h3>
 Download the source directly from Wiby <a href="/download/wibysource.zip">here</a>, or from <a href="https://github.com/wibyweb/wiby/">GitHub</a>. The source is released under the GPLv2 license. Copy the source files for Wiby to your server.
@@ -141,8 +132,15 @@ This could happen if you are not using Ubuntu 20. You might have to locate the c
 <br>
 <br>
 <h3>Build the core server application:</h3>
+The core application is located inside the go folder. Run the following commands after copying the files over to your preferred location:
 <pre>
-Inside the go folder:
+For Ubuntu 20:
+go get -u github.com/go-sql-driver/mysql
+
+For Ubuntu 22 or latest Golang versions:
+go install github.com/go-sql-driver/mysql@latest
+go mod init mysql
+go get github.com/go-sql-driver/mysql
 
 go build core.go
 go build 1core.go
@@ -423,7 +421,7 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
 You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. 
-Edit the servers.csv file for rt to indicate all available replica servers. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each core) works also.
+Edit the servers.csv file for rt to indicate all available replica servers. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also.
 <br>
 <br>
 The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, 
@@ -431,15 +429,15 @@ drastically speeding up search speeds especially for multi-word queries. By defa
 on line 373 and rebuild the core application.
 <br>
 <br>
-The number of available replicas must divide evenly into the search results per page limit (lim), OR, the search results per page limit must divide evenly into the number of available replicas. If there 
-is an excess of available replicas such that they do not divide evenly, those will remain in synch but will not be used for searches unless another replica fails. You can adjust the search results per page limit (lim) to a different value (default 12), 
-and then rebuild to make excess available replicas divide evenly (if necessary).
+The search results per page limit must evenly divide 'into' OR 'by' the total number of connections defined in servers.csv. If there is an excess of available replicas such that 
+they do not divide evenly, those will remain in sync but will not be used for searches unless another replica fails. You can adjust the search results per page limit ('lim' inside core.go) to a different value (default 12), 
+then rebuild core.go and restart rt. Include the new page limit when you run rt since it is no longer default (eg for a limit of 10: './rt 10') to make excess available replicas divide evenly (if necessary).
 <br>
 <br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
 the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas.
 <br><br>
-<b>Full instructions below:</b>
+<b>Instructions for Building a MySQL Replica:</b>
 <br>
 <br>
 On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own.
