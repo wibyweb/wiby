@@ -42,6 +42,7 @@
 		}
  
 	    $url = mysqli_real_escape_string($link, $_POST['url']);
+	    $url = str_replace("''", "%27", $url); 
 //		$url = str_replace("\'", "\'\'", $_POST['url']);
 //		$url = str_replace("\"", "\"\"", $url);
 		$title = mysqli_real_escape_string($link, $_POST['title']);
