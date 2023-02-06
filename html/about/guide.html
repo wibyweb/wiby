@@ -553,6 +553,10 @@ and directory that the core application is running on (not required for 1core).
 <br>
 Add the replica server's VPN address/port to upstream remote_core {} from the default config for nginx (see the provided example template). You can use the VPS as a backup instead by adding 'backup' to its address (eg: server 127.0.0.1:8080 backup;)
 <br>
+<br>
+<h3>Additional Notes</h3>
+The crawler stores a maximum of 80KB worth of text from the body of each webpage. To change this limit, edit the "body_len" definition from inside htmlparse.h and recompile the crawler. 
+This will affect the total size of the index and overall search speeds.
 </p>
 </blockquote>
 </body>    
