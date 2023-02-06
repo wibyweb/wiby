@@ -63,7 +63,7 @@
 	while($row = mysqli_fetch_array($result))
 	{
 		$id[] = $row['id'];
-		$url[] = $row['url'];
+		$url[] = str_replace("'", "%27", $row['url']); 
 		$worksafe[] = $row['worksafe']; 
 	}
 	
