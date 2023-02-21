@@ -23,13 +23,13 @@ DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `accounts` (
-  `name` varchar(50) NOT NULL,
-  `hash` text,
-  `level` text,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci NOT NULL,
+  `hash` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `level` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `attempts` int(11) DEFAULT '0',
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -50,10 +50,10 @@ DROP TABLE IF EXISTS `feedback`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `feedback` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -136,13 +136,13 @@ DROP TABLE IF EXISTS `reviewqueue`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reviewqueue` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text,
+  `url` mediumtext,
   `worksafe` tinyint(1) DEFAULT NULL,
-  `reserved` text,
+  `reserved` mediumtext,
   `reservetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -163,19 +163,19 @@ DROP TABLE IF EXISTS `windex`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `windex` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `url_noprefix` text,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `language` text,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `surprise` tinyint(1) DEFAULT NULL,
   `http` tinyint(1) DEFAULT NULL,
   `updatable` int(11) DEFAULT '1',
   `worksafe` tinyint(1) DEFAULT NULL,
-  `crawl_tree` text,
-  `crawl_family` text,
+  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_pages` int(11) DEFAULT NULL,
   `crawl_type` int(11) DEFAULT NULL,
   `crawl_repeat` tinyint(1) DEFAULT NULL,
@@ -183,14 +183,14 @@ CREATE TABLE `windex` (
   `enable` tinyint(1) DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `fault` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -211,4 +211,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-07-05  1:23:45
+-- Dump completed on 2023-02-21  0:06:18

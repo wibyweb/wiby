@@ -24,11 +24,11 @@ DROP TABLE IF EXISTS `rejected`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `rejected` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text,
-  `user` text,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `user` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -51,7 +51,7 @@ CREATE TABLE `reserve_id` (
   `id` bigint(20) NOT NULL,
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -72,10 +72,10 @@ DROP TABLE IF EXISTS `titlecheck`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `titlecheck` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text,
-  `title` text,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -96,4 +96,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-07-05  1:23:55
+-- Dump completed on 2023-02-21  0:06:27
