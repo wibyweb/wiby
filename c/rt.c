@@ -6,7 +6,7 @@
 //Tracker will create a copy of this file called 'res.csv' and display only the confirmed online servers
 //as well as ID ranges divided across all servers so each has the same number of rows.
 
-#include <mysql.h>
+#include </usr/include/mysql/mysql.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -342,3 +342,4 @@ int main(int argc, char **argv)
 		sleep(5);
 	}
 }
+

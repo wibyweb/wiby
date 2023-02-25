@@ -1,6 +1,6 @@
 //wiby refresh scheduler
 
-#include <mysql.h>
+#include </usr/include/mysql/mysql.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

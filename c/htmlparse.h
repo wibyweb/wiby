@@ -48,9 +48,9 @@ void htmlparse(){
 	charsetsize=titlesize=keywordssize=descriptionsize=robotssize=bodysize=0;
 
 	memset(window,'#',window_len);
-	window[window_len]=0;
+//	window[window_len]=0;
 	memset(windowWithSpaces,'#',window_len);
-	windowWithSpaces[window_len]=0;
+//	windowWithSpaces[window_len]=0;
 	memset(charset,0,charset_len+1);
 	memset(mysqlcharset,0,mysqlcharset_len+1);
 	memset(title,0,title_len+1);

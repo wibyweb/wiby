@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include </usr/include/curl/curl.h> //ubuntu 16
-//#include </usr/include/curl/easy.h> //ubuntu 16
-//#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20
-//#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20
+//#include </usr/include/curl/curl.h> //RHEL/Rocky
+//#include </usr/include/curl/easy.h> //RHEL/Rocky
+//#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
+//#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
 
 //gcc checkrobots.c -o checkrobots -lcurl
 
@@ -30,7 +30,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		return 0;
 
 	memset(rwindow,'?',rwindow_len);
-	rwindow[rwindow_len]=0;
+//	rwindow[rwindow_len]=0;
 	
 	//curl_global_init(CURL_GLOBAL_ALL);
 	CURL *curl;
