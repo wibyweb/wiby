@@ -20,6 +20,7 @@ p { font-size:17px; margin-bottom:0px; margin-top:0px; }
 .pin { font-size:14px; COLOR: #2e2e2e;}
 textarea:focus, input:focus{ outline: none;}
 blockquote { width: 700px; }
+input[type='number'] { width: 80px; }
 pre { width:700px; white-space: pre-wrap; word-wrap: break-word; }
 </style> 
 <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
@@ -123,12 +124,12 @@ Download the source directly from Wiby <a href="/download/wiby-main.zip">here</a
 
 <h3>Compile the crawler (cr), refresh scheduler (rs), replication tracker (rt):</h3>
 <pre>
-gcc cr.c -o cr -I/usr/include/mysql -lmysqlclient -lcurl -std=c99 -O3
-gcc rs.c -o rs -I/usr/include/mysql -lmysqlclient -std=c99 -O3
-gcc rt.c -o rt -I/usr/include/mysql -lmysqlclient -std=c99 -O3
+gcc cr.c -o cr -lmysqlclient -lcurl -std=c99 -O3
+gcc rs.c -o rs -lmysqlclient -std=c99 -O3
+gcc rt.c -o rt -lmysqlclient -std=c99 -O3
 </pre>
 If you get any compile errors, it is likely due to the path of the mysql or libcurl header files. 
-This could happen if you are not using Ubuntu 20. You might have to locate the correct path for curl.h, easy.h, and mysql.h.
+This could happen if you are not using Ubuntu. You might have to locate the correct path for curl.h, easy.h, mysql.h, then edit the &#35;include paths in the source files.
 <br>
 <br>
 <h3>Build the core server application:</h3>
@@ -137,7 +138,7 @@ The core application is located inside the go folder. Run the following commands
 For Ubuntu 20:
 go get -u github.com/go-sql-driver/mysql
 
-For Ubuntu 22 or latest Golang versions:
+For Ubuntu 22 OR latest Golang versions:
 go install github.com/go-sql-driver/mysql@latest
 go mod init mysql
 go get github.com/go-sql-driver/mysql
