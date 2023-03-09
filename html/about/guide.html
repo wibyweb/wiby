@@ -165,6 +165,7 @@ ft_min_word_len=2
 sql_mode = "NO_BACKSLASH_ESCAPES"
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_520_ci
+innodb_ft_enable_stopword=0
 skip-character-set-client-handshake
 default-authentication-plugin=mysql_native_password
 wait_timeout = 800
@@ -234,6 +235,7 @@ FLUSH PRIVILEGES;
 In /etc/nginx/, create a directory called 'phpcache', and another one called 'cache'.
 <br>
 Instead of going through every detail, I will provide a template for you to try out as your default nginx config from inside /etc/nginx/sites-available/ of the source code.
+New nginx versions depricated /sites-available, so you might have to place the template inside /etc/nginx/conf.d instead.
 <br>
 <br>
 You should learn nginx configuration on your own, this template is just to assist. 
@@ -441,7 +443,7 @@ the replicas are all connected on. <a href="https://www.digitalocean.com/communi
 <b>Instructions for Building a MySQL Replica:</b>
 <br>
 <br>
-On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own.
+On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own, then restart MySQL.
 <pre>
 #setting up replication below
 bind-address = 127.0.0.1,my.vpn.ip
@@ -456,7 +458,7 @@ create user 'slave_user'@'%' identified by 'd0gemuchw0w';
 GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%';
 FLUSH PRIVILEGES;
 </pre>
-On the replica server, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart mysql:
+On the replica server, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart MySQL:
 <pre>
 [client]
 default-character-set=utf8mb4
@@ -471,6 +473,7 @@ sql_mode = "NO_BACKSLASH_ESCAPES"
 #character-set-client-handshake = FALSE
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_520_ci
+innodb_ft_enable_stopword=0
 skip-character-set-client-handshake
 default-authentication-plugin=mysql_native_password
 wait_timeout = 800
