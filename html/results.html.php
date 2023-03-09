@@ -2,7 +2,7 @@
 
 <html>  
   <head>  
-    <title>wiby.me</title>  
+    <title>TITLE</title>  
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
 	<link rel=stylesheet href="/styles.css" type="text/css"> 
 	<link rel="search" type="application/opensearchdescription+xml" title="your title" href="/opensearch.xml">	
