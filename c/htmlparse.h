@@ -84,16 +84,20 @@ void htmlparse(){
 		
 	for(int i=0;i<fsize;i++){
 		c = fileStr[i];
+		int skipchar = 0;
+		if(c== 10 || c == 13 || c == 14 || c == 15 || c == 127 || c == 0 || c == 9){
+			skipchar = 1;	
+		}
 		
 		//use a rolling window of 100 bytes to detect elements, ignore lf/cr/so/si/space/null/tab
-		if(c!= 10 && c != 13 && c != 14 && c != 15 && c != 127 && c != 32 && c != 0 && c != 9){
+		if(skipchar == 0 && c != 32){
 			for(int j=0;j<window_len-1;j++){
 				window[j] = window[j+1];
 			}
 			window[window_len-1] = c;
 		}
 		//use a rolling window of 100 bytes to detect elements, but permit space, ignore lf/cr/null/tab
-		if(c!= 10 && c != 13 && c != 14 && c != 15 && c != 127 && c != 0 && c != 9){
+		if(skipchar == 0){
 			for(int j=0;j<window_len-1;j++){
 				windowWithSpaces[j] = windowWithSpaces[j+1];
 			}
@@ -102,14 +106,14 @@ void htmlparse(){
 		
 		//Get Title
 		if(titlefound == 2){
-			if(titlesize < (title_len-2) && c!= 10 && c != 13 && c != 14 && c != 15 && c != 127 && c != 0 && c != 9){
+			if(titlesize < (title_len-2) && skipchar == 0){
 				title[titlesize]=c;
 				titlesize++;
 				if(c == 39){//check for single quotes and double them up for sql safety
 					title[titlesize]=c;
 					titlesize++;
 				}
-				if(c != 32 && c != 12 && c != 13 && c != 14 && c != 15 && c != 127 && c != 10 && c != 9){//some titles are just a bunch of spaces or garbage, need to check for that
+				if(c != 32 && skipchar == 0){//some titles are just a bunch of spaces or garbage, need to check for that
 					emptytitle = 0;
 				}				
 			}
@@ -133,7 +137,7 @@ void htmlparse(){
 				charsetfound = 2;
 				//printf("\n%s",charset);
 			}			
-			if(charsetfound == 1 && charsetsize < charset_len && c != '"' && c != '\''){
+			if(charsetfound == 1 && charsetsize < charset_len && c != '"' && c != '\'' && skipchar == 0){
 				charset[charsetsize]=c;
 				charsetsize++;
 			}
@@ -148,7 +152,7 @@ void htmlparse(){
 				descriptionfound = 2;
 				//printf("\n%s",description);
 			}			
-			if(descriptionfound == 1 && descriptionsize < (description_len-2) && c != '"'){
+			if(descriptionfound == 1 && descriptionsize < (description_len-2) && c != '"' && skipchar == 0){
 				description[descriptionsize]=c;
 				descriptionsize++;
 				if(c == 39){//check for single quotes and double them up for sql safety
@@ -167,7 +171,7 @@ void htmlparse(){
 				keywordsfound = 2;
 				//printf("\n%s",keywords);
 			}			
-			if(keywordsfound == 1 && keywordssize < (keywords_len-2) && c != '"'){
+			if(keywordsfound == 1 && keywordssize < (keywords_len-2) && c != '"' && skipchar == 0){
 				keywords[keywordssize]=c;
 				keywordssize++;
 				if(c == 39){//check for single quotes and double them up for sql safety
@@ -190,15 +194,14 @@ void htmlparse(){
 				if(locateInWindow(window,"noindex","NOINDEX",7)==1 || locateInWindow(window,"none","NONE",4)==1)
 					noindex=nofollow=1;					
 			}			
-			if(robotsfound == 1 && robotssize < robots_len && c != '"' && c != '\''){
+			if(robotsfound == 1 && robotssize < robots_len && c != '"' && c != '\'' && skipchar == 0){
 				robots[robotssize]=c;
 				robotssize++;				
 			}
 		}
 		if(robotsfound == 0 && locateInWindow(window,"robots\"content=","ROBOTS\"CONTENT=",15)==1){
 			robotsfound = 1;
-		}						
-			
+		}
 			
 		if(titlefound != 2){
 			//Ignore between scripts, styles, and remove all tags, repeated spaces, tabs, cr, lf, null, add a space at end of every tag
@@ -240,7 +243,7 @@ void htmlparse(){
 
 			//Get Body
 			//exclude remaining tags, comments, scripts, styles, cr, lf, null, tab, add a space after a '>' but only allow one
-			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  c!= 13 && c != 14 && c != 15 && c != 127 && c != 10 && c != 0 && c != 9 && bodysize < (body_len-2)){
+			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  skipchar == 0 && bodysize < (body_len-2)){
 				if(putspace == 1){
 					if(spacecount == 0){
 						body[bodysize]=32;
