@@ -146,7 +146,12 @@ go get github.com/go-sql-driver/mysql
 go build core.go
 go build 1core.go
 </pre>
-If you are just starting out, you can use '1core'. If you are going to setup replication servers or you are using a computer with a lot of available cores, you can use 'core', but make sure to read the scaling section. 
+If you are just starting out, you can use '1core'. If you are going to setup replication servers or you are using a computer with a lot of available cores, you can use 'core', but make sure to read the scaling section.
+<br>
+<br>
+If you want to use 1core on a server separate from your reverse proxy server, modify line 38 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
+<br>
+<br>
 You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version is used mainly for prototyping.
 <br>
 <br>
@@ -173,6 +178,7 @@ wait_timeout = 800
 #memory use settings, you should adjust this based on your hardware
 innodb_buffer_pool_size = 1342177280
 innodb_buffer_pool_instances = 2
+innodb_flush_method = O_DIRECT
 
 </pre>
 Login to MySQL and type:
@@ -216,6 +222,22 @@ grant select on graveyard to 'approver'@'localhost';
 grant update on accounts to 'approver'@'localhost';
 grant insert on accounts to 'approver'@'localhost';
 grant delete on accounts to 'approver'@'localhost';
+grant select on ws0 to 'crawler'@'localhost';<a name="accounts"></a>
+grant update on ws0 to 'crawler'@'localhost';
+grant insert on ws0 to 'crawler'@'localhost';
+grant delete on ws0 to 'crawler'@'localhost';
+grant select on ws1 to 'crawler'@'localhost';
+grant update on ws1 to 'crawler'@'localhost';
+grant insert on ws1 to 'crawler'@'localhost';
+grant delete on ws1 to 'crawler'@'localhost';
+grant select on ws2 to 'crawler'@'localhost';
+grant update on ws2 to 'crawler'@'localhost';
+grant insert on ws2 to 'crawler'@'localhost';
+grant delete on ws2 to 'crawler'@'localhost';
+grant select on ws3 to 'crawler'@'localhost';
+grant update on ws3 to 'crawler'@'localhost';
+grant insert on ws3 to 'crawler'@'localhost';
+grant delete on ws3 to 'crawler'@'localhost';
 use wibytemp;
 grant select on titlecheck to 'crawler'@'localhost';
 grant insert on titlecheck to 'crawler'@'localhost';
@@ -266,8 +288,13 @@ If crawling through hyperlinks on a page, the following file types are accepted:
 <br>
 <br>
 <h3>Start the core server</h3>
-If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have a lot of available CPU cores. Make sure to read the scaling section. 
 You can run the core server on startup with a cron job.
+<br>
+<br>
+If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have a lot of available CPU cores. Make sure to read the scaling section. 
+<br>
+<br>
+If you want to use 1core on a server separate from your reverse proxy server, modify line 38 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
 <br>
 <br>
 <h3>Set Administrator Password for the Web Interface</h3>
@@ -424,17 +451,19 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
 You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. 
-Edit the servers.csv file for rt to indicate all available replica servers. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also.
+Edit the servers.csv file for rt to indicate all available replica servers and the corresponding shard table (ws0 to wsX) to use. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also as long as you have the same number of shard tables available. If you don't want to replicate all shard tables on a replica, MySQL server supports <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>. 
+<br>
+<br>
+Four tables are already preconfigured and enabled by default in the 'shards' file that the crawler references. You can <a href="guide.html#create">create</a> more shard tables as needed.
 <br>
 <br>
 The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, 
 drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement 
-on line 373 and rebuild the core application.
+on line 394 and rebuild the core application.
 <br>
 <br>
-The search results per page limit must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
-they do not divide evenly, those will remain in sync but will not be used for searches unless another replica fails. You can adjust the search results per page limit ('lim' inside core.go) to a different value (default 12), 
-then rebuild core.go and restart rt. Include the new page limit when you run rt since it is no longer default (eg for a limit of 10: './rt 10') to make excess available replicas divide evenly (if necessary).
+The search results per page limit is 12, and must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
+they do not divide evenly, those will remain in sync but will not be used for searches unless another replica fails. 
 <br>
 <br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
@@ -481,6 +510,7 @@ wait_timeout = 800
 #memory use settings, you should adjust this based on your hardware
 innodb_buffer_pool_size = 1342177280
 innodb_buffer_pool_instances = 2
+innodb_flush_method = O_DIRECT
 
 #setting up replication below
 bind-address = 0.0.0.0
@@ -540,16 +570,71 @@ Make sure that:
 Slave_IO_Running: Yes
 Slave_SQL_Running: Yes
 </pre>
-In MySQL on the replica, create the accounts required for the replication tracker and core application:
+In MySQL on the replica, create the <a name="replicaaccounts">accounts required</a> for the replication tracker and core application:
 <pre>
 use wiby;
-create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
-grant select on windex to 'remote_guest'@'%';
 create user 'guest'@'localhost' identified by 'qwer';
 grant select on windex to 'guest'@'localhost';
+create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
+grant select on windex to 'remote_guest'@'%';
+grant select on ws0 to 'remote_guest'@'%';
+grant select on ws1 to 'remote_guest'@'%';
+grant select on ws2 to 'remote_guest'@'%';
+grant select on ws3 to 'remote_guest'@'%';
+create user 'crawler'@'localhost' identified by 'seekout';
 FLUSH PRIVILEGES;
-
 </pre>
+<br>
+<a name="create"><b>Creating More Shard Tables</b></a>
+<br>
+<br>
+There are 12 shard tables already in the database (4 of them enabled by default), but if you need more: 
+<br>
+<br>
+Stop the crawler and update the number in the 'shards' file, then copy a shard table entry (wsX) from the wiby.db template file, renaming it in the proper number sequence, and paste that into the mysql console on the primary database. 
+<br>
+<br>
+Make sure to <a href="guide.html#accessshards">give access</a> to the new shard tables.
+<br>
+<br>
+You will need to rebalance the shards, follow the steps below, then restart the crawler. Going forward it will round-robin insert into those shards as new pages are crawled. 
+<br>
+<br>
+<b>Balancing Additional Shards</b>
+<br>
+<br>
+For now you would have to manually rebalance new shards when creating them. Four shards are already enabled by default and should be balanced, but if you need to use more shards, the most straight-forward way to rebalance them is to: 
+<br>
+<br>
+Update 'servers.csv' with the additional shard connections being used.
+<br>
+<br>
+Stop the crawler and update 'shards' with the new total of shards being used.
+<br>
+<br>
+Start up rt, then copy down the id numbers referenced for each connection. 
+<br>
+<br>
+Truncate all the shard tables on the primary:
+<pre>
+truncate ws0; truncate ws1; etc..
+</pre>
+Repopulate the 1st shard table (and so on), on the primary server:
+<pre>
+"UPDATE windex SET shard = 0 WHERE id BETWEEN 0 AND 5819;" replacing those id numbers with those indicated by rt. 
+"INSERT INTO ws0 SELECT * FROM windex WHERE id BETWEEN 0 AND 5819;" replacing those id numbers with those indicated by rt. 
+
+Repeat those steps for each shard table.
+</pre>
+These changes will propagate down to the replicas, and the core application will be able to use them as long as permissions to those tables were added.
+<br>
+<br>
+<a name="accessshards"><b>Accessing Additional Shards</b></a>
+<br>
+<br>
+Apply the account access permissions listed <a href="guide.html#replicaaccounts">here</a> for core app and rt access to each replica and <a href="guide.html#accounts">here</a> for crawler access to each new shard table on the primary server or replica hosting the core app. 
+<br>
+<br>
 <h3>Load Balancing</h3>
 You should run the core application on one or more of your replicas and have nginx send traffic to it, this way you can reduce the burden on your VPS. The replication tracker (rt) must run on the same server 
 and directory that the core application is running on (not required for 1core).
