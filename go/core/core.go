@@ -101,7 +101,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	//check if general search param exists
 	general := false
-	if _, ok := m["g"]; ok { //check if &nsfw added to json url
+	if _, ok := m["g"]; ok {
 		general = true
 	}
 
