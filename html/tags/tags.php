@@ -41,13 +41,29 @@
 		$status = "";
 		
 		if( isset($_POST['tags']))
-		{
+		{			
 			$tags = mysqli_real_escape_string($link, $_POST['tags']);
+			
+			$result = mysqli_query($link,"SELECT id, shard FROM windex WHERE url = '".$url."'");
+			if ($result === false)  
+			{
+			  $error = 'Error: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}	
+			while($row = mysqli_fetch_array($result))
+			{
+				$idArray[] = $row['id'];
+				$shardArray[] = $row['shard'];
+			}	
+			$id = $idArray[0];
+			$shard = $shardArray[0];							
+			
 			if($tags==""){
-				$result = mysqli_query($link,"UPDATE windex SET tags = NULL WHERE url = '".$url."';");
+				$result = mysqli_query($link,"UPDATE windex SET tags = NULL WHERE id = $id AND url = '".$url."'");
 			}
 			else{
-				$result = mysqli_query($link,"UPDATE windex SET tags = '".$tags."' WHERE url = '".$url."';");
+				$result = mysqli_query($link,"UPDATE windex SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
 			}
 			if ($result === false)   
 			{
@@ -55,11 +71,25 @@
 			  include 'error.html.php';  
 			  exit(); 
 			}
+			
+			if($tags==""){
+				$result = mysqli_query($link,"UPDATE ws$shard SET tags = NULL WHERE id = $id AND url = '".$url."'");
+			}
+			else{
+				$result = mysqli_query($link,"UPDATE ws$shard SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
+			}
+			if ($result === false)   
+			{
+			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}	
+					
 			$status = "Update Completed";
 			unset($_POST['tags']);
 		}		
 	    
-		$result = mysqli_query($link,"SELECT tags FROM windex WHERE url = '".$url."';");
+		$result = mysqli_query($link,"SELECT tags FROM windex WHERE url = '".$url."'");
 		if ($result === false)  
 		{
 		  $error = 'Error fetching index: ' . mysqli_error($link);  
