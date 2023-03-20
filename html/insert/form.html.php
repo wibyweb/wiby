@@ -81,6 +81,11 @@
         <label for="updatable">updatable (0 for no, or integer value 1-6, 1 is default):</label>   
 
         <textarea id="updatable" name="updatable"></textarea> 
+      </div> 
+      <div>
+        <label for="shard">shard (leave blank if not using shards, otherwise indicate a shard number):</label>   
+
+        <textarea id="shard" name="shard"></textarea> 
       </div>   
       <div><input type="submit" value="Submit"/></div>    
 

@@ -8,16 +8,10 @@
 	}
 
 	if (!isset($_POST['url']))    
-
 	{    
-
 	  include 'form.html.php';    
-
-	}    
-
-	else    
-
-	{    
+	}else{    
+		
 		$link = mysqli_connect('localhost', 'crawler', 'seekout');
 
 		if (!$link)
@@ -43,49 +37,62 @@
  
 	    $url = mysqli_real_escape_string($link, $_POST['url']);
 	    $url = str_replace("''", "%27", $url); 
-//		$url = str_replace("\'", "\'\'", $_POST['url']);
-//		$url = str_replace("\"", "\"\"", $url);
 		$title = mysqli_real_escape_string($link, $_POST['title']);
-//		$title = str_replace("\'", "\'\'", $_POST['title']);
-//		$title = str_replace("\"", "\"\"", $title);
 		$tags = mysqli_real_escape_string($link, $_POST['tags']);
-//		$tags = str_replace("\'", "\'\'", $_POST['tags']);
-//		$tags = str_replace("\"", "\"\"", $tags);
 		$description = mysqli_real_escape_string($link, $_POST['description']);
-//		$description = str_replace("\'", "\'\'", $_POST['description']);
-//		$description = str_replace("\"", "\"\"", $description);
 		$body = mysqli_real_escape_string($link, $_POST['body']);
-//		$body = str_replace("\'", "\'\'", $_POST['body']);
-//		$body = str_replace("\"", "\"\"", $body);
 		$http = mysqli_real_escape_string($link, $_POST['http']);
-//		$http = str_replace("\'", "\'\'", $_POST['http']);
-//		$http = str_replace("\"", "\"\"", $http);
 		$surprise = mysqli_real_escape_string($link, $_POST['surprise']);
-//		$surprise = str_replace("\'", "\'\'", $_POST['surprise']);
-//		$surprise = str_replace("\"", "\"\"", $surprise);
 		$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
-//		$worksafe = str_replace("\'", "\'\'", $_POST['worksafe']);
-//		$worksafe = str_replace("\"", "\"\"", $worksafe);
     	$enable = mysqli_real_escape_string($link, $_POST['enable']);
-//		$enable = str_replace("\'", "\'\'", $_POST['enable']);
-//		$enable = str_replace("\"", "\"\"", $enable);
 		$updatable = mysqli_real_escape_string($link, $_POST['updatable']);
-//		$updatable = str_replace("\'", "\'\'", $_POST['updatable']);
-//		$updatable = str_replace("\"", "\"\"", $updatable);
+		$shard = mysqli_real_escape_string($link, $_POST['shard']);
 
-		$sql = "INSERT INTO windex (url,title,tags,description,body,http,surprise,worksafe,enable,updatable,approver) 
+		if($shard == ""){
+			$sql = "INSERT INTO windex (url,title,tags,description,body,http,surprise,worksafe,enable,updatable,approver) 
 	VALUES ('".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$_SESSION["user"]."')";
-
-
-		if (!mysqli_query($link, $sql))   
-		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
-		  include 'error.html.php';  
-		  exit(); 
+			if (!mysqli_query($link, $sql))   
+			{
+			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}	
+		}else{
+			$sql = "INSERT INTO windex (url,title,tags,description,body,http,surprise,worksafe,enable,updatable,shard,approver) 
+	VALUES ('".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$shard."','".$_SESSION["user"]."')";
+			if (!mysqli_query($link, $sql))   
+			{
+			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}
+			
+			$result = mysqli_query($link,"SELECT id FROM windex WHERE url = '".$url."'");
+			if ($result === false)  
+			{
+			  $error = 'Error: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}	
+			while($row = mysqli_fetch_array($result))
+			{
+				$idArray[] = $row['id'];
+			}	
+			$id = $idArray[0];
+						
+			$sql = "INSERT INTO ws$shard (id,url,title,tags,description,body,http,surprise,worksafe,enable,updatable,shard,approver) 
+	VALUES ('".$id."','".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$shard."','".$_SESSION["user"]."')";
+			if (!mysqli_query($link, $sql))   
+			{
+			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  include 'error.html.php';  
+			  exit(); 
+			}			
+					
 		}
 
-	    	$output = 'No errors '.      
-	    	$url . ' ' .    
+	    $output = 'No errors '.      
+	    $url . ' ' .    
 		$title . ' ' . 
 		$tags . ' ' . 
 		$description . ' ' . 
@@ -93,8 +100,9 @@
 		$http . ' ' . 
 		$surprise . ' ' . 
 		$worksafe . ' ' . 
-	    	$enable . ' ' .
-		$updatable;  
+	    $enable . ' ' .
+		$updatable . ' ' .
+		$shard;  
 
 		include 'insert.html.php';       
 	}
