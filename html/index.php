@@ -266,7 +266,7 @@ else
 		$queryWithQuotesAndFlags = '"'. $queryNoQuotes_SQLsafe.'"'.$flags.'';
 
 		//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN Match(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN Match(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 
 		/*if(!$outputFTS)//dont error out yet, will give another try below
 		{
@@ -439,7 +439,7 @@ else
 		}
 
 		//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-		$outputFTSgeneral = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTSgeneral = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN Match(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN 20 WHEN Match(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('$query' IN BOOLEAN MODE) THEN Match(title) AGAINST('$query' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
 
 
 		//if all else fails, try a full text search with * appended (better to get something than nothing I suppose)
@@ -457,7 +457,7 @@ else
 			$querystar = $querystar . '*';
 
 			//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-			$outputFTSgeneral = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN LOCATE('$queryNoQuotes_SQLsafe', tags)>0 THEN 30 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 AND Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('$queryNoQuotes_SQLsafe', title)>0 THEN 16 WHEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) THEN Match(title) AGAINST('$querystar' IN BOOLEAN MODE) END DESC, id DESC LIMIT $lim OFFSET $offset");
+			$outputFTSgeneral = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT $lim OFFSET $offset");
 
 			if(!$outputFTSgeneral)
 			{
