@@ -101,7 +101,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	//check if general search param exists
 	general := false
-	if _, ok := m["g"]; ok { 
+	if _, ok := m["g"]; ok { //check if &nsfw added to json url
 		general = true
 	}
 
@@ -342,7 +342,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 			query = "\"" + query + "\""
 			urlDetected = true
-			isURL = "WHEN LOCATE('" + queryNoQuotes_SQLsafe + "',url)>0 THEN 25"
+			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes_SQLsafe + "\"' IN BOOLEAN MODE) THEN 25"
 		}
 
 		//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
@@ -406,7 +406,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 			servers = strings.Split(resourceFilestring, "\n")
 			numServers = len(servers)
-
+			
+			/*no longer needed
 			//numServers must divide evenly into lim, or lim must divide evenly into numservers
 			//if they do not, automatically adjust numServers until they divide evenly
 
@@ -420,6 +421,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					numServers -= 1
 				}
 			}
+			*/
 
 			//calculate limit and offset on distributed servers.
 			if numServers < limInt {
@@ -447,14 +449,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						//ip, database, startID, endID
 						//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(192.168.1.xxx:3306)/wiby?charset=utf8mb4")
 						serverIP := serverSettings[0]
-						serverDB := serverSettings[1]
+						shard := serverSettings[1]
 						startID := serverSettings[2]
 						endID := serverSettings[3]
-						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/" + serverDB + "?charset=utf8mb4"
+						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
 						//	fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 
-						//send special distributed query, only need ID returned and also search between startID/endID
-						sqlQuery = "SELECT id FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 " + isURL + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						//send special distributed query, only need ID returned 
+						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
 						serverCount++
 					}
@@ -501,9 +503,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if general == false{
 			//if all went well with replication servers, send query to master containing idList and use the rangeOffset
 			if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 " + isURL + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 			} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 " + isURL + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			}
 
 			switch noresults { //if noresults == 1, no results were found during search on active replication servers
@@ -675,7 +677,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			general = true
 			noresults = 0
 
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 
 			if repsearchfail == 0 && noservers == 0 {
 				serverCount = 0
@@ -686,14 +688,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						//ip, database, startID, endID
 						//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(10.8.0.102:3306)/wiby?charset=utf8mb4")
 						serverIP := serverSettings[0]
-						serverDB := serverSettings[1]
+						shard := serverSettings[1]
 						startID := serverSettings[2]
 						endID := serverSettings[3]
-						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/" + serverDB + "?charset=utf8mb4"
+						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
 						//fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 
-						//send special distributed query, only need ID returned and also search between startID/endID
-						sqlQuery = "SELECT id FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						//send special distributed query, only need ID returned
+						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
 						serverCount++
 					}
@@ -714,9 +716,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				//if all went well with replication servers, send query to local database containing idList and use the rangeOffset
 				if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 				} else { //else, if no replication servers or there was some sort of error, search the whole local database instead
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 				}
 			}
 
@@ -891,7 +893,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "*", "", -1)
 			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
 			query = query + "*"
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 
 			if repsearchfail == 0 && noservers == 0 {
 				serverCount = 0
@@ -902,14 +904,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						//ip, database, startID, endID
 						//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(10.8.0.102:3306)/wiby?charset=utf8mb4")
 						serverIP := serverSettings[0]
-						serverDB := serverSettings[1]
+						shard := serverSettings[1]
 						startID := serverSettings[2]
 						endID := serverSettings[3]
-						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/" + serverDB + "?charset=utf8mb4"
+						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
 						//fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 
-						//send special distributed query, only need ID returned and also search between startID/endID
-						sqlQuery = "SELECT id FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						//send special distributed query, only need ID returned
+						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
 						serverCount++
 					}
@@ -930,9 +932,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				//if all went well with replication servers, send query to local database containing idList and use the rangeOffset
 				if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 				} else { //else, if no replication servers or there was some sort of error, search the whole local database instead
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 				}
 			}
 

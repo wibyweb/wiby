@@ -99,7 +99,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	//check if general search param exists
 	general := false
-	if _, ok := m["g"]; ok { 
+	if _, ok := m["g"]; ok { //check if &nsfw added to json url
 		general = true
 	}
 
@@ -354,7 +354,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 			query = "\"" + query + "\""
 			urlDetected = true
-			isURL = "WHEN LOCATE('" + queryNoQuotes_SQLsafe + "',url)>0 THEN 25"
+			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes_SQLsafe + "\"' IN BOOLEAN MODE) THEN 25"
 		}
 
 		//fmt.Printf(">%s<\n", query)
@@ -362,13 +362,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		var sqlQuery, id, url, title, description, body string		
 		var ids[] string
 		count := 0
-
+		
+		queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
 		if(general == false){
-			queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
 
 			//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 " + isURL + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
-
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 
 			rows, err := db.Query(sqlQuery)
 
@@ -548,7 +547,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 " + isURL + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 
 
 			rows2, err := db.Query(sqlQuery)
@@ -719,7 +718,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
 			query = query + "*"
 
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags)>0 THEN 30 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title)>0 THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			rows3, err := db.Query(sqlQuery)
 			if err != nil {
 				res.Page = strconv.Itoa(0)
