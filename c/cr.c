@@ -16,7 +16,10 @@
 #define url_fromlist_arraylen 102400
 #define url_insert_arraylen 1024000
 
-char /**title, *keywords, *description, *page,*/ *windexinsert, *windexupdate, *titlecheckinsert, urlPath_finalURL[1001], folderPath_finalURL[1001], urlPrefix_finalURL[1001], urlNPNP_finalURL[1001], strDepth[101], url_fromlist[url_fromlist_arraylen], url_insert[url_insert_arraylen], previousfail[5][1001];
+char /**title, *keywords, *description, *page,*/ *windexinsert, *windexupdate, *windexRandUpdate, *titlecheckinsert, /**shardinsert,*/ urlPath_finalURL[1001], folderPath_finalURL[1001], urlPrefix_finalURL[1001], urlNPNP_finalURL[1001], strDepth[101], url_fromlist[url_fromlist_arraylen], url_insert[url_insert_arraylen], previousfail[5][1001];
+
+FILE *shardfile;
+char *shardfilestr;
 
 void finish_with_error(MYSQL *con)
 {
@@ -44,7 +47,7 @@ int main(int argc, char **argv)
 	if(argc == 2 && isnum(argv[1])==1){
 		id_assigned=1;
 	}else if(argc >= 2){
-		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you have two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\n");
+		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you have two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table.");
 		exit(0);	
 	}
 
@@ -55,11 +58,55 @@ int main(int argc, char **argv)
 		previousfail[i][0]=0;
 	}
 
+	//check if there are shards to include
+	int nShards=0,fsize=0,shardnum=0;
+	char shardc, numshards[20], shardnumstr[20];
+	memset(shardnumstr,0,20);
+	sprintf(shardnumstr,"0");
+	if(shardfile = fopen("shards", "r")){
+		fseek(shardfile, 0, SEEK_END);
+		fsize = ftell(shardfile);
+		fseek(shardfile, 0, SEEK_SET);
+		if(fsize > 0 && fsize < 11){
+			shardfilestr = malloc(fsize + 1);
+			if(fread(shardfilestr, 1, fsize, shardfile)){}
+			shardfilestr[fsize] = 0;
+			for(int i=0;i<fsize;i++){
+				shardc = shardfilestr[i];
+				if(shardc != 10 && shardc != 13){
+					numshards[i]=shardc;
+				}
+			}
+			//check if its a number
+			if(isnum(numshards)==1){
+				nShards = atoi(numshards);
+			}else{
+				printf("\nThe shard file contains gibberish: '%s'. Fix this to continue.",shardfilestr);
+				exit(0);
+			}
+			free(shardfilestr);
+		}
+		if(fsize>10){
+			printf("\nTotal number of shards is too large (10 billion???).");
+		}
+		fclose(shardfile);
+	}else{
+                printf("\n'shards' file is missing. Create the file and indicate the number of available shards you are using or set it to 0 if you aren't. The default is 4.\n\n");
+                exit(0);
+        }
+	if(nShards > 0){
+		srand(time(NULL));
+		shardnum = (rand() % nShards);
+		memset(shardnumstr,0,20);
+		sprintf(shardnumstr,"%d",shardnum);
+	}
+
 	while(1)
-	{
+	{	
 		//printf("MySQL client version: %s\n", mysql_get_client_info());
 		int alreadydone = 0, permitted=1;
 		 //allocates or initialises a MYSQL object
+
 		MYSQL *con = mysql_init(NULL);
 
 		if (con == NULL) 
@@ -68,15 +115,10 @@ int main(int argc, char **argv)
 		}
 
 		//establish a connection to the database.  We provide connection handler, host name, user name and password parameters to the function. The other four parameters are the database name, port number, unix socket and finally the client flag
-		if (mysql_real_connect(con, "localhost", "crawler", "seekout", NULL, 0, NULL, 0) == NULL) 
+		if (mysql_real_connect(con, "localhost", "crawler", "seekout", "wiby", 0, NULL, 0) == NULL) 
 		{
 			finish_with_error(con);
 		} 
-	
-		if (mysql_query(con, "use wiby;")) 
-		{
-		    finish_with_error(con);
-		}
 
 		if (mysql_query(con, "SET CHARSET utf8;")) 
 		{
@@ -131,6 +173,12 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+			//convert shardnum to string
+			if(nShards > 0){
+				sprintf(shardnumstr,"%d",shardnum);
+				//itoa(shardnum,shardnumstr,10);
+			}
+
 			printf("-----------------------------------------------------------------------------------\nFetching:");
 			//grab the first entry (fifo)
 			/*for(int i=0; i<num_fields; i++)
@@ -244,7 +292,7 @@ int main(int argc, char **argv)
 			memset(checkurl,0,urlnoprefixcount*24+1000);
 			if(task == 0 || task[0] == '2'){//index request did not come from refresh scheduler, or is an autocrawl url
 				//strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url = 'http://"); //replace this with a simple check for url_noprefix column match
-				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url_noprefix = '"); 
+				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url_noprefix = '"); 
 				if(slashfound==0)
 				{
 					strcat(checkurl,urlnoprefix);
@@ -267,7 +315,7 @@ int main(int argc, char **argv)
 					strcat(checkurl,"';");
 				}
 			}else{
-				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url = '");
+				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url = '");
 				strcat(checkurl,url);
 				strcat(checkurl,"';");
 			}
@@ -294,6 +342,7 @@ int main(int argc, char **argv)
 			char *dbtitle;	
 			char *fault;
 			char *dburl;
+			char *shard;
 			
 			//Catalog the previous crawl attempts (to see if they are all for the same page - which would be a bad sign)
 			previousID[4] = previousID[3];
@@ -316,6 +365,7 @@ int main(int argc, char **argv)
 				enableOldDBval = row[3];
 				fault = row[4];
 				dburl=row[5];
+				shard=row[6];
 				if(task != 0 && task[0]=='2')
 					alreadydone=1;
 			}
@@ -487,7 +537,7 @@ int main(int argc, char **argv)
 						mysql_free_result(resulturlcheck);
 						char doublecheckurl[finalURLsize+100];
 						memset(doublecheckurl,0,finalURLsize+100);
-						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url = '");
+						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url = '");
 						strcat(doublecheckurl,finalURL);
 						strcat(doublecheckurl,"';");
 						if (mysql_query(con, doublecheckurl)) 
@@ -511,6 +561,7 @@ int main(int argc, char **argv)
 							enableOldDBval = row[3];
 							fault = row[4];
 							dburl=row[5];
+							shard=row[6];
 							if(task != 0 && task[0]=='2')
 								alreadydone=1;
 							foundindoublecheck=1;
@@ -665,7 +716,9 @@ int main(int argc, char **argv)
 					//description = (char*)calloc(descriptionsize+1,sizeof(char));
 					//page = (char*)calloc(bodysize+1,sizeof(char));
 					windexinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
+					//shardinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
 					windexupdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
+					windexRandUpdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
 					titlecheckinsert = (char*)calloc(finalURLsize+titlesize+1001,sizeof(char));
 					
 					/*if(title == NULL || keywords == NULL || description == NULL || page == NULL || windexinsert == NULL || windexupdate == NULL)
@@ -838,7 +891,7 @@ int main(int argc, char **argv)
 						}
 
 						//strcpy(windexinsert,"INSERT INTO windex (url,title,tags,description,body,worksafe,enable,date,approver,surprise,updatable) VALUES ('");
-						strcpy(windexinsert,"INSERT INTO windex (url,url_noprefix,title,description,body,worksafe,enable,date,approver,surprise,http,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat) VALUES ('");
+						strcpy(windexinsert,"INSERT INTO windex (url,url_noprefix,title,description,body,worksafe,enable,date,approver,surprise,http,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,shard) VALUES ('");
 						
 						strcpy(windexupdate,"UPDATE windex SET url = '");
 
@@ -846,16 +899,21 @@ int main(int argc, char **argv)
 						int reserveFail = 0;
 						char randomreserve[100];
 						char *randID;
+						char *randshard;
+						char *randURL;
 						MYSQL_RES *resultRandID;
+
 						if(idexistsalready == 0){//Insert new entry
-							//For search topics to be evenly discovered by all read-sharded replication servers, new rows must be scattered randomly across the database insead of sequental:
+							//For search topics to be evenly discovered by all replication servers assigned to a specific shard table, new rows must be scattered randomly across the database insead of sequental:
 							//Existing rows will be randomly selected and copied (inserted) into a new row at the bottom, and the new page will take the ID number of the old one through an update.
 							//select id from windex where enable = 1 order by rand() limit 1;
 							//insert into windex (url,title,tags,description,body,surprise,http,updatable,worksafe,enable,date,updated,approver,fault) select url,title,tags,description,body,surprise,http,updatable,worksafe,enable,date,updated,approver,fault from windex where id = 1338;
+							//the corresponding shard table will also be updated with the same ID and contents, which can be offloaded to another replica.
+
+
 							printf("\nInserting into index... ");
-							char windexRandUpdate[1500];
-							memset (windexRandUpdate,0,1500);
-							if (mysql_query(con, "SELECT id FROM windex WHERE enable = 1 ORDER BY rand() LIMIT 1;")) 
+
+							if (mysql_query(con, "SELECT id, shard, url_noprefix FROM windex WHERE enable = 1 ORDER BY rand() LIMIT 1;")) 
 							{
 							    finish_with_error(con);
 							}						
@@ -868,6 +926,8 @@ int main(int argc, char **argv)
 							if(row != NULL){
 								randID = row[0];
 								idexistsvalue = row[0];
+								randshard = row[1];
+								randURL = row[2];
 							}
 
 							//reserve the randomly selected ID when running more than one crawler
@@ -897,7 +957,7 @@ int main(int argc, char **argv)
 								}								
 							}
 
-							if(row == NULL || reserveFail==1){//if no rows in db yet or fails to reserve an ID (this was the code for idexistsalready == 0 condition before randomization strategy was adopted.
+							if(row == NULL || reserveFail==1){//if no rows in db yet or fails to reserve an ID 
 								strcat(windexinsert,finalURL);strcat(windexinsert,"','");
 								strcat(windexinsert,finalURLnoprefix);strcat(windexinsert,"','");
 								//strcat(windexinsert,prefix);strcat(windexinsert,"','");
@@ -947,27 +1007,202 @@ int main(int argc, char **argv)
 									strcat(windexinsert,",");
 									strcat(windexinsert,crawl_type);
 									strcat(windexinsert,",");
-									strcat(windexinsert,crawl_repeat);									
+									strcat(windexinsert,crawl_repeat);								
 								}
-
-								strcat(windexinsert,");");
+								strcat(windexinsert,",");
+								strcat(windexinsert,shardnumstr);	
+								strcat(windexinsert,")");
 								if (mysql_query(con, windexinsert)) 
 								{
 								    finish_with_error(con);
-								}								
+								}
+
+								//insert into the shard table for the new row
+								if(nShards>0){
+									memset(windexinsert,0,strlen(windexinsert));
+									strcpy(windexinsert,"INSERT INTO ws");
+									strcat(windexinsert,shardnumstr);
+									strcat(windexinsert," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = LAST_INSERT_ID();");
+									/*//get the last ID
+									MYSQL_RES *resultIDnum;
+									char *lastIDnum;
+
+									if (mysql_query(con, "SELECT LAST_INSERT_ID() FROM windex limit 1")) 
+									{
+									    finish_with_error(con);
+									}	
+									MYSQL_ROW rowLastID = mysql_fetch_row(resultIDnum);
+									if(rowLastID != NULL){
+										lastIDnum = rowLastID[0];
+									}						
+
+									strcpy(shardinsert,"INSERT INTO ws");
+									strcat(shardinsert,shardnumstr);
+									strcat(shardinsert," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = ");
+									strcat(shardinsert,lastIDnum);
+									if (mysql_query(con, shardinsert)) 
+									{
+									    finish_with_error(con);
+									}
+									mysql_free_result(resultIDnum);	*/
+									if (mysql_query(con, windexinsert)) 
+									{
+									    finish_with_error(con);
+									}
+								}			
 							}
 							else{
-								strcpy(windexRandUpdate,"INSERT INTO windex (url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault) SELECT url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault FROM windex WHERE id = ");
+								//copy contents of randomly selected row to a new row in windex.
+								strcpy(windexRandUpdate,"INSERT INTO windex (url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = ");
 								strcat(windexRandUpdate,randID);
-								//printf("\n%s",windexRandUpdate);
-								if (mysql_query(con, windexRandUpdate))//will copy random row to bottom, old row will be overwritten with new indexed page, ensures random distribution of content.
+								if (mysql_query(con, windexRandUpdate))
 								{
 								    finish_with_error(con);
+								}
+								if(nShards>0){//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
+									//update the shard id in windex
+									memset(windexRandUpdate,0,strlen(windexRandUpdate));
+									strcpy(windexRandUpdate,"UPDATE windex set shard = ");
+									strcat(windexRandUpdate,shardnumstr);
+									strcat(windexRandUpdate," WHERE id = LAST_INSERT_ID()");
+									if (mysql_query(con, windexRandUpdate))
+									{
+									    finish_with_error(con);
+									}
+									//insert that row into the next shard
+									memset(windexRandUpdate,0,strlen(windexRandUpdate));
+									strcpy(windexRandUpdate,"INSERT INTO ws");
+									strcat(windexRandUpdate,shardnumstr);
+									strcat(windexRandUpdate," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = LAST_INSERT_ID()");
+									if (mysql_query(con, windexRandUpdate))
+									{
+									    finish_with_error(con);
+									}
+
+									//Overwrite the randomly selected row with the contents of the newly crawled webpage
+									memset(windexRandUpdate,0,strlen(windexRandUpdate));
+									strcpy(windexRandUpdate,"UPDATE windex SET url = '");
+									strcat(windexRandUpdate,finalURL);
+									strcat(windexRandUpdate,"', url_noprefix = '");
+									strcat(windexRandUpdate,finalURLnoprefix);
+									strcat(windexRandUpdate,"', title = '");
+									if(titlesize > 0 && emptytitle == 0){
+										strcat(windexRandUpdate,title);
+									}
+									else{
+										if(finalURLsize < 111){
+											strcat(windexRandUpdate,finalURL);
+										}
+										else{
+											strcat(windexRandUpdate,"Untitled");
+										}
+									}
+									strcat(windexRandUpdate,"', tags = NULL, description = '");
+									strcat(windexRandUpdate,description);
+									strcat(windexRandUpdate,"', body = '");
+									strcat(windexRandUpdate,body);	
+									strcat(windexRandUpdate,"', worksafe = ");
+									strcat(windexRandUpdate,worksafe);
+									strcat(windexRandUpdate,", approver = '");
+									strcat(windexRandUpdate,approver);
+									strcat(windexRandUpdate,"', surprise = ");
+									strcat(windexRandUpdate,surprise);
+									strcat(windexRandUpdate,", http = ");
+									strcat(windexRandUpdate,httpAllow);
+									strcat(windexRandUpdate,", updatable = ");
+									strcat(windexRandUpdate,updatable);
+									if(task==0){//didn't come from refresh or link crawling 
+										strcat(windexRandUpdate,", crawl_pages = ");
+										strcat(windexRandUpdate,crawl_pages);
+										strcat(windexRandUpdate,", crawl_type = ");
+										strcat(windexRandUpdate,crawl_type);
+										strcat(windexRandUpdate,", crawl_repeat = ");
+										strcat(windexRandUpdate,crawl_repeat);
+									}else if(task != 0 && task[0]=='2'){//came from link crawling
+										strcat(windexRandUpdate,", crawl_tree = '");
+										strcat(windexRandUpdate,crawl_tree);
+										strcat(windexRandUpdate,"', crawl_family ='");
+										strcat(windexRandUpdate,crawl_family);
+										strcat(windexRandUpdate,"', crawl_pages = ");
+										strcat(windexRandUpdate,crawl_pages);
+										strcat(windexRandUpdate,", crawl_type = ");
+										strcat(windexRandUpdate,crawl_type);
+										strcat(windexRandUpdate,", crawl_repeat = ");
+										strcat(windexRandUpdate,"0");
+									}
+									strcat(windexRandUpdate,", updated = CURRENT_TIMESTAMP, date = now(), fault = 0 WHERE id = ");
+									strcat(windexRandUpdate,randID);
+									if (mysql_query(con, windexRandUpdate))
+									{
+									    finish_with_error(con);
+									}
+																
+									//Finally, update the corresponding shard table row
+									if(randshard != 0){
+										memset(windexRandUpdate,0,strlen(windexRandUpdate));
+										strcpy(windexRandUpdate,"UPDATE ws");
+										strcat(windexRandUpdate,randshard);
+										strcat(windexRandUpdate," SET url = '");
+										strcat(windexRandUpdate,finalURL);
+										strcat(windexRandUpdate,"', url_noprefix = '");
+										strcat(windexRandUpdate,finalURLnoprefix);
+										strcat(windexRandUpdate,"', title = '");
+										if(titlesize > 0 && emptytitle == 0){
+											strcat(windexRandUpdate,title);
+										}
+										else{
+											if(finalURLsize < 111){
+												strcat(windexRandUpdate,finalURL);
+											}
+											else{
+												strcat(windexRandUpdate,"Untitled");
+											}
+										}
+										strcat(windexRandUpdate,"', tags = NULL, description = '");
+										strcat(windexRandUpdate,description);
+										strcat(windexRandUpdate,"', body = '");
+										strcat(windexRandUpdate,body);	
+										strcat(windexRandUpdate,"', worksafe = ");
+										strcat(windexRandUpdate,worksafe);
+										strcat(windexRandUpdate,", approver = '");
+										strcat(windexRandUpdate,approver);
+										strcat(windexRandUpdate,"', surprise = ");
+										strcat(windexRandUpdate,surprise);
+										strcat(windexRandUpdate,", http = ");
+										strcat(windexRandUpdate,httpAllow);
+										strcat(windexRandUpdate,", updatable = ");
+										strcat(windexRandUpdate,updatable);
+										if(task==0){//didn't come from refresh or link crawling  
+											strcat(windexRandUpdate,", crawl_pages = ");
+											strcat(windexRandUpdate,crawl_pages);
+											strcat(windexRandUpdate,", crawl_type = ");
+											strcat(windexRandUpdate,crawl_type);
+											strcat(windexRandUpdate,", crawl_repeat = ");
+											strcat(windexRandUpdate,crawl_repeat);
+										}else if(task != 0 && task[0]=='2'){//came from link crawling
+											strcat(windexRandUpdate,", crawl_tree = '");
+											strcat(windexRandUpdate,crawl_tree);
+											strcat(windexRandUpdate,"', crawl_family ='");
+											strcat(windexRandUpdate,crawl_family);
+											strcat(windexRandUpdate,"', crawl_pages = ");
+											strcat(windexRandUpdate,crawl_pages);
+											strcat(windexRandUpdate,", crawl_type = ");
+											strcat(windexRandUpdate,crawl_type);
+											strcat(windexRandUpdate,", crawl_repeat = ");
+											strcat(windexRandUpdate,"0");
+										}
+										strcat(windexRandUpdate,", updated = CURRENT_TIMESTAMP, date = now(), fault = 0 WHERE id = ");
+										strcat(windexRandUpdate,randID);
+										if (mysql_query(con, windexRandUpdate))
+										{
+										    finish_with_error(con);
+										}	
+									}
 								}
 								copiedRandom = 1;
 							}																					
 						}
-						if(idexistsalready == 1 || copiedRandom == 1){	//update existing entry
+						if(idexistsalready == 1 || (copiedRandom == 1 && nShards == 0)){ //update an existing entry or a new entry with no shard listed in row
 
 							printf("\nUpdating index... ");
 							strcat(windexupdate,finalURL);
@@ -1003,25 +1238,91 @@ int main(int argc, char **argv)
 							strcat(windexupdate,httpAllow);
 							strcat(windexupdate,", updatable = ");
 							strcat(windexupdate,updatable);
-							if(task==0){//didn't come from refresh or link crawling
+							if(task==0){//didn't come from refresh or link crawling  VERIFY THIS IS RIGHT
 								strcat(windexupdate,", crawl_pages = ");
 								strcat(windexupdate,crawl_pages);
 								strcat(windexupdate,", crawl_type = ");
 								strcat(windexupdate,crawl_type);
 								strcat(windexupdate,", crawl_repeat = ");
 								strcat(windexupdate,crawl_repeat);
+							}else if(task != 0 && task[0]=='2' && idexistsalready == 0){//came from link crawling
+								strcat(windexupdate,", crawl_tree = '");
+								strcat(windexupdate,crawl_tree);
+								strcat(windexupdate,"', crawl_family ='");
+								strcat(windexupdate,crawl_family);
+								strcat(windexupdate,"', crawl_pages = ");
+								strcat(windexupdate,crawl_pages);
+								strcat(windexupdate,", crawl_type = ");
+								strcat(windexupdate,crawl_type);
+								strcat(windexupdate,", crawl_repeat = ");
+								strcat(windexupdate,"0");
 							}
 							if(copiedRandom == 0)//normal update
 								strcat(windexupdate,", updated = CURRENT_TIMESTAMP, fault = 0 WHERE id = ");
 							else
 								strcat(windexupdate,", updated = CURRENT_TIMESTAMP, date = now(), fault = 0 WHERE id = ");
-							strcat(windexupdate,idexistsvalue);
-							strcat(windexupdate,";");
+							strcat(windexupdate,idexistsvalue);//will be same as randID if a new page is replacing that row
 							if (mysql_query(con, windexupdate)) 
 							{
 							    finish_with_error(con);
 							}
+
+							//update shard
+							if(nShards>0 && idexistsalready == 1 && shard != 0){
+								memset(windexupdate,0,strlen(windexupdate));
+								strcpy(windexupdate,"UPDATE ws");
+								strcat(windexupdate,shard);
+								strcat(windexupdate," SET url = '");
+								strcat(windexupdate,finalURL);
+								strcat(windexupdate,"', url_noprefix = '");
+								strcat(windexupdate,finalURLnoprefix);
+								strcat(windexupdate,"', title = '");
+								if(titlesize > 0 && emptytitle == 0){
+									strcat(windexupdate,title);
+								}
+								else{
+									if(finalURLsize < 111){
+										strcat(windexupdate,finalURL);
+									}
+									else{
+										strcat(windexupdate,"Untitled");
+									}
+								}
+								if(copiedRandom == 0)//normal update
+									strcat(windexupdate,"', description = '");
+								else{
+									strcat(windexupdate,"', tags = NULL, description = '");
+								}
+								strcat(windexupdate,description);
+								strcat(windexupdate,"', body = '");
+								strcat(windexupdate,body);	
+								strcat(windexupdate,"', worksafe = ");
+								strcat(windexupdate,worksafe);
+								strcat(windexupdate,", approver = '");
+								strcat(windexupdate,approver);
+								strcat(windexupdate,"', surprise = ");
+								strcat(windexupdate,surprise);
+								strcat(windexupdate,", http = ");
+								strcat(windexupdate,httpAllow);
+								strcat(windexupdate,", updatable = ");
+								strcat(windexupdate,updatable);
+								if(task==0){//didn't come from refresh or link crawling  VERIFY THIS IS RIGHT
+									strcat(windexupdate,", crawl_pages = ");
+									strcat(windexupdate,crawl_pages);
+									strcat(windexupdate,", crawl_type = ");
+									strcat(windexupdate,crawl_type);
+									strcat(windexupdate,", crawl_repeat = ");
+									strcat(windexupdate,crawl_repeat);
+								}
+								strcat(windexupdate,", updated = CURRENT_TIMESTAMP, fault = 0 WHERE id = ");
+								strcat(windexupdate,idexistsvalue);//will be same as randID if a new page is replacing that row
+								if (mysql_query(con, windexupdate)) 
+								{
+								    finish_with_error(con);
+								}
+							}
 						}
+
 						//unreserve randomly selected ID
 						if(id_assigned==1 && idexistsalready==0 && reserveFail==0){
 							if (mysql_query(con, "use wibytemp;")) 
@@ -1081,7 +1382,7 @@ int main(int argc, char **argv)
 						printf("\n\nSuccess!");
 					}
 					//clear page from memory
-					/*free(title); free(keywords); free(description); free(page);*/ free(windexinsert); free(windexupdate); free(titlecheckinsert); 
+					free(windexinsert); free(windexupdate); free(titlecheckinsert); free(windexRandUpdate); //free(shardinsert);
 				}
 				else 
 				{
@@ -1123,11 +1424,22 @@ int main(int argc, char **argv)
 								printf("\nPage may no longer exist. Moving to review.");
 							}
 							memset(sqlqueryremove,0,200);
-							strcpy(sqlqueryremove,"DELETE FROM windex WHERE id=");
-							strcat(sqlqueryremove,idexistsvalue);strcat(sqlqueryremove,";");
+							strcpy(sqlqueryremove,"DELETE FROM windex WHERE id =");
+							strcat(sqlqueryremove,idexistsvalue);
 							if (mysql_query(con, sqlqueryremove)) 
 							{
 							    finish_with_error(con);
+							}
+							if(nShards > 0 && shard != 0){
+								memset(sqlqueryremove,0,200);
+								strcpy(sqlqueryremove,"DELETE FROM ws");
+								strcat(sqlqueryremove,shard);
+								strcat(sqlqueryremove," WHERE id = ");
+								strcat(sqlqueryremove,idexistsvalue);
+								if (mysql_query(con, sqlqueryremove)) 
+								{
+								    finish_with_error(con);
+								}
 							}
 							if(crawl_family == 0 || (crawl_family != 0 && crawl_family[0] =='0')){
 								char sqlqueryreview[1001];
@@ -1144,14 +1456,21 @@ int main(int argc, char **argv)
 						else if(idexistsalready == 1 && fault[0] != '1')//mark that there is a fault with the page, crawler will throw it back into review if it happens again
 						{
 							printf("\nFault found. Will try again later.");
-							char sqlqueryfault[250];
-							memset(sqlqueryfault,0,250);
+							char sqlqueryfault[450];
+							memset(sqlqueryfault,0,450);
 							strcpy(sqlqueryfault,"UPDATE windex SET updated = CURRENT_TIMESTAMP, fault = 1 WHERE id = ");
-							strcat(sqlqueryfault,idexistsvalue);strcat(sqlqueryfault,";");
-							if (mysql_query(con, sqlqueryfault)) 
+							strcat(sqlqueryfault,idexistsvalue);
+							if(nShards>0 && shard != 0){
+								strcat(sqlqueryfault,"; UPDATE ws");
+								strcat(sqlqueryfault,shard);
+								strcat(sqlqueryfault," SET updated = CURRENT_TIMESTAMP, fault = 1 WHERE id = ");
+								strcat(sqlqueryfault,idexistsvalue);
+							}
+							//strcat(sqlqueryfault,"; COMMIT");
+							if (mysql_real_query(con, sqlqueryfault,strlen(sqlqueryfault))) 
 							{
 							    finish_with_error(con);
-							}						
+							}				
 						}
 						else{
 							FILE *abandoned = fopen("abandoned.txt", "a");
@@ -1365,11 +1684,24 @@ int main(int argc, char **argv)
 					printf(" Removing from index...");
 					memset(sqlqueryremove,0,200);
 					strcpy(sqlqueryremove,"DELETE FROM windex WHERE id=");
-					strcat(sqlqueryremove,idexistsvalue);strcat(sqlqueryremove," AND updatable != '0'");
+					strcat(sqlqueryremove,idexistsvalue);
+					strcat(sqlqueryremove," AND updatable != '0'");
 					if (mysql_query(con, sqlqueryremove)) 
 					{
 					    finish_with_error(con);
-					}					
+					}	
+					if(nShards>0 && shard != 0){
+						memset(sqlqueryremove,0,200);
+						strcpy(sqlqueryremove,"DELETE FROM ws");
+						strcat(sqlqueryremove,shard);
+						strcat(sqlqueryremove," WHERE id=");
+						strcat(sqlqueryremove,idexistsvalue);
+						strcat(sqlqueryremove," AND updatable != '0'");
+						if (mysql_query(con, sqlqueryremove)) 
+						{
+						    finish_with_error(con);
+						}
+					}				
 				}
 				FILE *abandoned = fopen("abandoned.txt", "a");
 				fputs (url,abandoned);
@@ -1378,12 +1710,21 @@ int main(int argc, char **argv)
 			}
 			//cleanup more sql stuff
 			mysql_free_result(resulturlcheck);
+
+			//rotate shard for next insert
+			if(nShards > 0){
+				shardnum++;
+				if(shardnum == nShards)
+					shardnum=0;
+				sprintf(shardnumstr,"%d",shardnum);
+			}
+
 			printf(" Awaiting next page in queue...\n\n");
 		}
 		//cleanup more sql stuff
 		mysql_free_result(result);
 		mysql_close(con);
-		
+
 		if(empty==1)
 			sleep(5);//sleep 5 seconds
 	}
