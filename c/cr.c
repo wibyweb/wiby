@@ -1460,16 +1460,20 @@ int main(int argc, char **argv)
 							memset(sqlqueryfault,0,450);
 							strcpy(sqlqueryfault,"UPDATE windex SET updated = CURRENT_TIMESTAMP, fault = 1 WHERE id = ");
 							strcat(sqlqueryfault,idexistsvalue);
+							if (mysql_query(con, sqlqueryfault)) 
+							{
+							    finish_with_error(con);
+							}
 							if(nShards>0 && shard != 0){
-								strcat(sqlqueryfault,"; UPDATE ws");
+								memset(sqlqueryfault,0,450);
+								strcat(sqlqueryfault,"UPDATE ws");
 								strcat(sqlqueryfault,shard);
 								strcat(sqlqueryfault," SET updated = CURRENT_TIMESTAMP, fault = 1 WHERE id = ");
 								strcat(sqlqueryfault,idexistsvalue);
-							}
-							//strcat(sqlqueryfault,"; COMMIT");
-							if (mysql_real_query(con, sqlqueryfault,strlen(sqlqueryfault))) 
-							{
-							    finish_with_error(con);
+								if (mysql_query(con, sqlqueryfault)) 
+								{
+								    finish_with_error(con);
+								}
 							}				
 						}
 						else{
