@@ -1466,7 +1466,7 @@ int main(int argc, char **argv)
 							}
 							if(nShards>0 && shard != 0){
 								memset(sqlqueryfault,0,450);
-								strcat(sqlqueryfault,"UPDATE ws");
+								strcpy(sqlqueryfault,"UPDATE ws");
 								strcat(sqlqueryfault,shard);
 								strcat(sqlqueryfault," SET updated = CURRENT_TIMESTAMP, fault = 1 WHERE id = ");
 								strcat(sqlqueryfault,idexistsvalue);
