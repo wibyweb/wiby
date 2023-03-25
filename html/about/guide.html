@@ -453,16 +453,20 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <hr>
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
-You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. 
-Edit the servers.csv file for rt to indicate all available replica servers and the corresponding shard table (ws0 to wsX) to use. If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also as long as you have the same number of shard tables available. If you don't want to replicate all shard tables on a replica, MySQL server supports <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>. 
+You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs. 
 <br>
 <br>
-Four tables are already preconfigured and enabled by default in the 'shards' file that the crawler references. You can <a href="guide.html#create">create</a> more shard tables as needed.
+There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is a little more complicated, where the crawler can store different sections of the 'windex' table into shard tables (ws0 to wsX) where all or some of them can be duplicated on a replica server. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case. 
+<br>
+<br>
+To try out the sharding method, indicate the number of shards in the 'shards' file that the crawler references. Also set 'shards := true' on line 48 of the core application. You also have to initially balance out the shard tables, which is explained <a href="guide.html#balance">here</a>. This method offers some slight speed improvements and less hard-drive storage across replicas if you use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>, but also requires the primary database and full replicas be twice as big. 
+<br>
+<br>
+If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also, with the sharding method you must include additional shard tables on that replica for each duplicate connection.
 <br>
 <br>
 The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, 
-drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement 
-on line 394 and rebuild the core application.
+drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement on line 396 and rebuild the core application.
 <br>
 <br>
 The search results per page limit is 12, and must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
@@ -591,7 +595,7 @@ FLUSH PRIVILEGES;
 <a name="create"><b>Creating More Shard Tables</b></a>
 <br>
 <br>
-There are 12 shard tables already in the database (4 of them enabled by default), but if you need more: 
+There are four shard tables already in the database, but if you need more: 
 <br>
 <br>
 Stop the crawler and update the number in the 'shards' file, then copy a shard table entry (wsX) from the wiby.db template file, renaming it in the proper number sequence, and paste that into the mysql console on the primary database. 
@@ -603,10 +607,10 @@ Make sure to <a href="guide.html#accessshards">give access</a> to the new shard 
 You will need to rebalance the shards, follow the steps below, then restart the crawler. Going forward it will round-robin insert into those shards as new pages are crawled. 
 <br>
 <br>
-<b>Balancing Additional Shards</b>
+<a name="balance"><b>Balancing Additional Shards</b>
 <br>
 <br>
-For now you would have to manually rebalance new shards when creating them. Four shards are already enabled by default and should be balanced, but if you need to use more shards, the most straight-forward way to rebalance them is to: 
+For now you would have to manually rebalance shards on first-time use. The most straight-forward way to rebalance them is to: 
 <br>
 <br>
 Update 'servers.csv' with the additional shard connections being used.
