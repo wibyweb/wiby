@@ -26,7 +26,6 @@ type PageData struct {
 	DBResults         []MySQLResults
 	Query, Page string
 	FindMore bool
-	FindMoreGeneral bool
 }
 
 func main() {
@@ -44,6 +43,9 @@ func main() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "%s %s \n", r.Method, r.URL)
 	//fmt.Fprintf(w, "%s \n", r.URL.RawQuery)
+
+	//Indicate whether or not you are using shard tables
+	shards := false
 
 	//check if worksafe+https cookie enabled.
 	filterHTTPS := false
@@ -97,12 +99,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if _, ok := m["p"]; ok {//gets page num, will convert to offset further down
 		page = strings.Replace(m["p"][0], "'", "''", -1)
 		offset = page
-	}
-
-	//check if general search param exists
-	general := false
-	if _, ok := m["g"]; ok {
-		general = true
 	}
 
 	lim := "12"
@@ -326,7 +322,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		tRes := MySQLResults{}
 		var res = PageData{}
 
-		//Check if query is a url
+		//Check if query is a url.
 		urlDetected := false
 		isURL := ""
 		if strings.Index(query, " ") == -1 && strings.Index(query, "\"") == -1 && strings.Index(query, ".") > -1 { //note this will also flag on file extensions
@@ -372,32 +368,38 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		var servers []string
 		numServers := 0
 		//parse res.csv
-		noservers := 0
+		noservers := false
 		repLim, _ := strconv.Atoi(lim)
 		repOffset, _ := strconv.Atoi(offset)
 		repLimStr := ""
 		repOffsetStr := ""
+		shard := ""
 		noresults := 0
 		repsearchfail := 0
 		var idListChans []chan string 
 
+		oneword := false
+		if strings.Index(query, " ") != -1{
+			oneword = true
+		}
+
 		resourceFile, err := ioutil.ReadFile("res.csv")
 		if err != nil {
-			noservers = 1
+			noservers = true
 		} else {
 			if len(resourceFile) < 2 {
-				noservers = 1
+				noservers = true
 			}
 		}
 
 		//this switches off use of multiple connections to process a one word query. Should remove this if the database grows significantly larger
 		if strings.Contains(query, " ") == false && oneletterquery == 0 {
-			noservers = 1
+			noservers = true
 		}
 
 		queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
 
-		if noservers == 0 {
+		if noservers == false {
 			//send query to go routines.
 			resourceFilestring := string(resourceFile)
 			//just in case user is messing around res.csv with a text editor and the editor ads a line feed to the end of the file
@@ -407,21 +409,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			servers = strings.Split(resourceFilestring, "\n")
 			numServers = len(servers)
 			
-			/*no longer needed
-			//numServers must divide evenly into lim, or lim must divide evenly into numservers
-			//if they do not, automatically adjust numServers until they divide evenly
+			if(shards == false){
+				//numServers must divide evenly into lim, or lim must divide evenly into numservers
+				//if they do not, automatically adjust numServers until they divide evenly
 
-			//calculate number of servers to use based on lim size
-			if limInt > numServers {
-				for limInt%numServers > 0 {
-					numServers -= 1
-				}
-			} else if numServers > limInt {
-				for numServers%limInt > 0 {
-					numServers -= 1
+				//calculate number of servers to use based on lim size
+				if limInt > numServers {
+					for limInt%numServers > 0 {
+						numServers -= 1
+					}
+				} else if numServers > limInt {
+					for numServers%limInt > 0 {
+						numServers -= 1
+					}
 				}
 			}
-			*/
 
 			//calculate limit and offset on distributed servers.
 			if numServers < limInt {
@@ -442,41 +444,50 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				idListChans = append(idListChans, make(chan string))
 			}
 			
-			if general == false{
-				for _, server := range servers {
-					serverSettings := strings.Split(server, ",")
-					if len(serverSettings) == 4 { //if line contains all 4 settings
-						//ip, database, startID, endID
-						//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(192.168.1.xxx:3306)/wiby?charset=utf8mb4")
-						serverIP := serverSettings[0]
-						shard := serverSettings[1]
-						startID := serverSettings[2]
-						endID := serverSettings[3]
-						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
-						//	fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
-
-						//send special distributed query, only need ID returned 
-						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
-						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
-						serverCount++
+			for _, server := range servers {
+				serverSettings := strings.Split(server, ",")
+				if len(serverSettings) == 4 { //if line contains all 4 settings
+					//ip, database, startID, endID
+					//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(192.168.1.xxx:3306)/wiby?charset=utf8mb4")
+					serverIP := serverSettings[0]
+					shard = serverSettings[1]
+					startID := serverSettings[2]
+					endID := serverSettings[3]
+					sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
+					//	fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
+					//send special distributed query, only need ID returned 
+					if(shards==false){
+						if(exactMatch==false && urlDetected==false && oneword==false){
+							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}else{
+							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}
+					}else{
+						if(exactMatch==false && urlDetected==false && oneword==false){
+							sqlQuery = "SELECT id FROM " + shard + " WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}else{
+							sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}
 					}
+					go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
+					serverCount++
 				}
-				for i := 0; i < serverCount; i++ {
-					//wait for channels to complete and collect results
-					idList += <-idListChans[i]
-				}
-				if len(idList) > 0 {
-					switch strings.Contains(idList, "e") {
-					case true:
-						repsearchfail = 1
-					default:
-						idList = idList[1:len(idList)] //trim the first comma in the list
-					}
-				} else {
-					noresults = 1
-				}
-				//fmt.Printf("\nChan: %s",idList)
 			}
+			for i := 0; i < serverCount; i++ {
+				//wait for channels to complete and collect results
+				idList += <-idListChans[i]
+			}
+			if len(idList) > 0 {
+				switch strings.Contains(idList, "e") {
+				case true:
+					repsearchfail = 1
+				default:
+					idList = idList[1:len(idList)] //trim the first comma in the list
+				}
+			} else {
+				noresults = 1
+			}
+			//fmt.Printf("\nChan: %s",idList)
 		}
 
 		//init the db and set charset
@@ -500,391 +511,187 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		countResults := 0
 		var ids[] string
 
-		if general == false{
-			//if all went well with replication servers, send query to master containing idList and use the rangeOffset
-			if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
-			} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
+		//if all went well with replication servers, send query to master containing idList and use the rangeOffset
+		if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
+			if(exactMatch==false && urlDetected==false && oneword==false){
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+			}else{
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+			}
+		} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
+			if(exactMatch==false && urlDetected==false && oneword==false){
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			}else{
 				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			}
-
-			switch noresults { //if noresults == 1, no results were found during search on active replication servers
-			case 0:
-				// Send the query
-				rows, err := db.Query(sqlQuery)
-				if err != nil {
-					fmt.Printf("\n%s", err)
-					res.Page = strconv.Itoa(0)
-					res.Query = m["q"][0] //get original unsafe query
-					if json {
-						w.Header().Set("Content-Type", "application/json")
-						t, _ := template.ParseFiles("coreassets/json/results.json.go")
-						t.Execute(w, res)
-					} else {
-						t, _ := template.ParseFiles("coreassets/results.html.go")
-						t.Execute(w, res)
-					}
-					//p := indexPage{}
-					//t, _ := template.ParseFiles("coreassets/form.html.go")
-					//t.Execute(w, p)
-					return
-				}
-
-				if urlDetected == true {
-					query = queryOriginal
-				}
-
-				for rows.Next() {
-					count++
-					countResults++
-
-					//this will get set if position of longest word of query is found within body
-					pos := -1
-
-					err := rows.Scan(&id, &url, &title, &description, &body)
-					if err != nil {
-						error.Error = err.Error()
-						t, _ := template.ParseFiles("coreassets/error.html.go")
-						t.Execute(w, error)
-					}
-
-					ids = append(ids,id)
-
-					//find query inside body of page
-					if exactMatch == false {
-						//remove the '*' if contained anywhere in query
-						/*if strings.Contains(queryNoQuotes,"*"){
-							queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
-						}	*/
-
-						if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
-						} else if pos == -1 {
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-						}
-
-						if pos == -1 { //prepare to find position of longest query word (or required word) within body
-							//remove the '*' at the end of the longest word if present
-							if strings.Contains(longestWord, "*") {
-								longestWord = strings.Replace(longestWord, "*", "", -1)
-							}
-							//search within body for position of longest query word.
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
-							//not found?, set position to a different word, make sure there's no wildcard on it
-							if pos == -1 && wordcount > 1 {
-								if longestwordelementnum > 0 {
-									words[0] = strings.Replace(words[0], "*", "", -1)
-									pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
-								}
-								if longestwordelementnum == 0 {
-									words[1] = strings.Replace(words[1], "*", "", -1)
-									pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
-								}
-							}
-						}
-					} else { //if exact match, find position of query within body
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-					}
-					//still not found?, set position to 0
-					if pos == -1 {
-						pos = 0
-					}
-
-					//Adjust position for runes within body
-					pos = utf8.RuneCountInString(body[:pos])
-
-					starttext := 0
-					//ballpark := 0
-					ballparktext := ""
-
-					//figure out how much preceding text to use
-					if pos < 32 {
-						starttext = 0
-					} else if pos > 25 {
-						starttext = pos - 25
-					} else if pos > 20 {
-						starttext = pos - 15
-					}
-
-					//total length of the ballpark
-					textlength := 180
-
-					//populate the ballpark
-					if pos >= 0 {
-						ballparktext = substr(body, starttext, starttext+textlength)
-					} //else{ ballpark = 0}//looks unused
-
-					//find position of nearest Period
-					//foundPeriod := true
-					posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
-
-					//find position of nearest Space
-					//foundSpace := true
-					posSpace := strings.Index(ballparktext, " ") + starttext
-
-					//if longest word in query is after a period+space within ballpark, reset starttext to that point
-					if (pos - starttext) > posPeriod {
-						starttext = posPeriod
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = substr(body, starttext, starttext+textlength)
-						} else {
-							body = ""
-						}
-					} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
-						//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
-						starttext = posSpace
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = substr(body, starttext, starttext+textlength)
-						} else {
-							body = ""
-						}
-					} else //else just set the bodymatch to the ballparktext
-					{
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = ballparktext
-						} else {
-							body = ""
-						}
-					}
-
-					tRes.Id = id
-					tRes.Url = url
-					tRes.Title = html.UnescapeString(title)
-					tRes.Description = html.UnescapeString(description)
-					tRes.Body = html.UnescapeString(body)
-					if json == true {
-						tRes.Title = JSONRealEscapeString(tRes.Title)
-						tRes.Description = JSONRealEscapeString(tRes.Description)
-						tRes.Body = JSONRealEscapeString(tRes.Body)
-					}
-					res.DBResults = append(res.DBResults, tRes)
-				}
-				defer rows.Close()
-				rows.Close()
-				if count > 0 { //new search method may cause less than the limit of row results per page even if there are more results to come, so we force a full count
-					count = limInt
-				}
-			} //end switch
 		}
 
-		//================================================================================================================================
-		//no more results found, do a general search 
-		if countResults < 6 && exactMatch == false {
-			count = 0
-			general = true
-			noresults = 0
-
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
-
-			if repsearchfail == 0 && noservers == 0 {
-				serverCount = 0
-				idList = ""
-				for _, server := range servers {
-					serverSettings := strings.Split(server, ",")
-					if len(serverSettings) == 4 { //if line contains all 4 settings
-						//ip, database, startID, endID
-						//create SQL connection string //db, err := sql.Open("mysql", "remote_guest:d0gemuchw0w@tcp(10.8.0.102:3306)/wiby?charset=utf8mb4")
-						serverIP := serverSettings[0]
-						shard := serverSettings[1]
-						startID := serverSettings[2]
-						endID := serverSettings[3]
-						sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
-						//fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
-
-						//send special distributed query, only need ID returned
-						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
-						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
-						serverCount++
-					}
-				}
-				for i := 0; i < serverCount; i++ {
-					//wait for channels to complete and collect results
-					idList += <-idListChans[i]
-				}
-				if len(idList) > 0 {
-					switch strings.Contains(idList, "e") {
-					case true:
-						repsearchfail = 1
-					default:
-						idList = idList[1:len(idList)] //trim the first comma in the list
-					}
+		switch noresults { //if noresults == 1, no results were found during search on active replication servers
+		case 0:
+			// Send the query
+			rows, err := db.Query(sqlQuery)
+			if err != nil {
+				fmt.Printf("\n%s", err)
+				res.Page = strconv.Itoa(0)
+				res.Query = m["q"][0] //get original unsafe query
+				if json {
+					w.Header().Set("Content-Type", "application/json")
+					t, _ := template.ParseFiles("coreassets/json/results.json.go")
+					t.Execute(w, res)
 				} else {
-					noresults = 1
+					t, _ := template.ParseFiles("coreassets/results.html.go")
+					t.Execute(w, res)
 				}
-				//if all went well with replication servers, send query to local database containing idList and use the rangeOffset
-				if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
-				} else { //else, if no replication servers or there was some sort of error, search the whole local database instead
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
-				}
+				//p := indexPage{}
+				//t, _ := template.ParseFiles("coreassets/form.html.go")
+				//t.Execute(w, p)
+				return
 			}
 
-			switch noresults { //if noresults == 1, no results were found during search on active replication servers
-			case 0:
-				rows2, err := db.Query(sqlQuery)
-				if err != nil {
-					res.Page = strconv.Itoa(0)
-					res.Query = m["q"][0] //get original unsafe query
-					if json {
-						w.Header().Set("Content-Type", "application/json")
-						t, _ := template.ParseFiles("coreassets/json/results.json.go")
-						t.Execute(w, res)
-					} else {
-						t, _ := template.ParseFiles("coreassets/results.html.go")
-						t.Execute(w, res)
-					}
+			if urlDetected == true {
+				query = queryOriginal
+			}
 
-					return
+			for rows.Next() {
+				count++
+				countResults++
+
+				//this will get set if position of longest word of query is found within body
+				pos := -1
+
+				err := rows.Scan(&id, &url, &title, &description, &body)
+				if err != nil {
+					error.Error = err.Error()
+					t, _ := template.ParseFiles("coreassets/error.html.go")
+					t.Execute(w, error)
 				}
 
-				for rows2.Next() {
-					count++
-					countResults++
-					//this will get set if position of longest word of query is found within body
-					pos := -1
+				ids = append(ids,id)
 
-					err := rows2.Scan(&id, &url, &title, &description, &body)
-					if err != nil {
-						error.Error = err.Error()
-						t, _ := template.ParseFiles("coreassets/error.html.go")
-						t.Execute(w, error)
-					}
+				//find query inside body of page
+				if exactMatch == false {
+					//remove the '*' if contained anywhere in query
+					/*if strings.Contains(queryNoQuotes,"*"){
+						queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+					}	*/
 
-					//check for duplicates if appending general search matches on the same page where exact matches were found
-					duplicate := false;
-					for _, idcheck := range ids{
-						if idcheck == id{
-							duplicate = true
-							break
-						}
-					}
-					if(duplicate == true){
-						continue
-					}
-
-					//find query inside body of page
-					if exactMatch == false {
-
-						if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
-						} else if pos == -1 {
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-						}
-
-						if pos == -1 { //prepare to find position of longest query word (or required word) within body
-							//remove the '*' at the end of the longest word if present
-							if strings.Contains(longestWord, "*") {
-								longestWord = strings.Replace(longestWord, "*", "", -1)
-							}
-							//search within body for position of longest query word.
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
-							//not found?, set position to a different word, make sure there's no wildcard on it
-							if pos == -1 && wordcount > 1 {
-								if longestwordelementnum > 0 {
-									words[0] = strings.Replace(words[0], "*", "", -1)
-									pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
-								}
-								if longestwordelementnum == 0 {
-									words[1] = strings.Replace(words[1], "*", "", -1)
-									pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
-								}
-							}
-						}
-					} else { //if exact match, find position of query within body
+					if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
+						pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
+					} else if pos == -1 {
 						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
 					}
-					//still not found?, set position to 0
-					if pos == -1 {
-						pos = 0
-					}
 
-					//Adjust position for runes within body
-					pos = utf8.RuneCountInString(body[:pos])
-
-					starttext := 0
-					//ballpark := 0
-					ballparktext := ""
-
-					//figure out how much preceding text to use
-					if pos < 32 {
-						starttext = 0
-					} else if pos > 25 {
-						starttext = pos - 25
-					} else if pos > 20 {
-						starttext = pos - 15
-					}
-
-					//total length of the ballpark
-					textlength := 180
-
-					//populate the ballpark
-					if pos >= 0 {
-						ballparktext = substr(body, starttext, starttext+textlength)
-					} //else{ ballpark = 0}//looks unused
-
-					//find position of nearest Period
-					//foundPeriod := true
-					posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
-
-					//find position of nearest Space
-					//foundSpace := true
-					posSpace := strings.Index(ballparktext, " ") + starttext
-
-					//if longest word in query is after a period+space within ballpark, reset starttext to that point
-					if (pos - starttext) > posPeriod {
-						starttext = posPeriod
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = substr(body, starttext, starttext+textlength)
-						} else {
-							body = ""
+					if pos == -1 { //prepare to find position of longest query word (or required word) within body
+						//remove the '*' at the end of the longest word if present
+						if strings.Contains(longestWord, "*") {
+							longestWord = strings.Replace(longestWord, "*", "", -1)
 						}
-					} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
-						//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
-						starttext = posSpace
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = substr(body, starttext, starttext+textlength)
-						} else {
-							body = ""
-						}
-					} else //else just set the bodymatch to the ballparktext
-					{
-						//populate the bodymatch
-						if (pos - starttext) >= 0 {
-							body = ballparktext
-						} else {
-							body = ""
+						//search within body for position of longest query word.
+						pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
+						//not found?, set position to a different word, make sure there's no wildcard on it
+						if pos == -1 && wordcount > 1 {
+							if longestwordelementnum > 0 {
+								words[0] = strings.Replace(words[0], "*", "", -1)
+								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
+							}
+							if longestwordelementnum == 0 {
+								words[1] = strings.Replace(words[1], "*", "", -1)
+								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
+							}
 						}
 					}
-
-					tRes.Id = id
-					tRes.Url = url
-					tRes.Title = html.UnescapeString(title)
-					tRes.Description = html.UnescapeString(description)
-					tRes.Body = html.UnescapeString(body)
-					if json == true {
-						tRes.Title = JSONRealEscapeString(tRes.Title)
-						tRes.Description = JSONRealEscapeString(tRes.Description)
-						tRes.Body = JSONRealEscapeString(tRes.Body)
-					}
-					res.DBResults = append(res.DBResults, tRes)
+				} else { //if exact match, find position of query within body
+					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
 				}
-				defer rows2.Close()
-				rows2.Close()
-				if count > 0 { //new search method may cause less than the limit of row results per page even if there are more results to come, so we force a full count
-					count = limInt
+				//still not found?, set position to 0
+				if pos == -1 {
+					pos = 0
 				}
-			}//end switch
-		}
+
+				//Adjust position for runes within body
+				pos = utf8.RuneCountInString(body[:pos])
+
+				starttext := 0
+				//ballpark := 0
+				ballparktext := ""
+
+				//figure out how much preceding text to use
+				if pos < 32 {
+					starttext = 0
+				} else if pos > 25 {
+					starttext = pos - 25
+				} else if pos > 20 {
+					starttext = pos - 15
+				}
+
+				//total length of the ballpark
+				textlength := 180
+
+				//populate the ballpark
+				if pos >= 0 {
+					ballparktext = substr(body, starttext, starttext+textlength)
+				} //else{ ballpark = 0}//looks unused
+
+				//find position of nearest Period
+				//foundPeriod := true
+				posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
+
+				//find position of nearest Space
+				//foundSpace := true
+				posSpace := strings.Index(ballparktext, " ") + starttext
+
+				//if longest word in query is after a period+space within ballpark, reset starttext to that point
+				if (pos - starttext) > posPeriod {
+					starttext = posPeriod
+					//populate the bodymatch
+					if (pos - starttext) >= 0 {
+						body = substr(body, starttext, starttext+textlength)
+					} else {
+						body = ""
+					}
+				} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
+					//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
+					starttext = posSpace
+					//populate the bodymatch
+					if (pos - starttext) >= 0 {
+						body = substr(body, starttext, starttext+textlength)
+					} else {
+						body = ""
+					}
+				} else //else just set the bodymatch to the ballparktext
+				{
+					//populate the bodymatch
+					if (pos - starttext) >= 0 {
+						body = ballparktext
+					} else {
+						body = ""
+					}
+				}
+
+				tRes.Id = id
+				tRes.Url = url
+				tRes.Title = html.UnescapeString(title)
+				tRes.Description = html.UnescapeString(description)
+				tRes.Body = html.UnescapeString(body)
+				if json == true {
+					tRes.Title = JSONRealEscapeString(tRes.Title)
+					tRes.Description = JSONRealEscapeString(tRes.Description)
+					tRes.Body = JSONRealEscapeString(tRes.Body)
+				}
+				res.DBResults = append(res.DBResults, tRes)
+			}
+			defer rows.Close()
+			rows.Close()
+			if count > 0 { //new search method may cause less than the limit of row results per page even if there are more results to come, so we force a full count
+				count = limInt
+			}
+		} //end switch
 
 		//================================================================================================================================
 		//no results found (count==0), so do a wildcard search (repeat the above process)
 		addWildcard := false
 		if count == 0 && offset == "0" && urlDetected == false && exactMatch == false {
+
 			addWildcard = true
 			query = strings.Replace(query, "\"", "", -1) //remove some things innodb gets fussy over
 			query = strings.Replace(query, "*", "", -1)
@@ -893,9 +700,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "*", "", -1)
 			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
 			query = query + "*"
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 
-			if repsearchfail == 0 && noservers == 0 {
+			if repsearchfail == 0 && noservers == false {
 				serverCount = 0
 				idList = ""
 				for _, server := range servers {
@@ -911,7 +718,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						//fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 
 						//send special distributed query, only need ID returned
-						sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						if(shards==false){
+							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + " ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}else{
+							sqlQuery = "SELECT id FROM " + shard + " WHERE enable = '1' " + additions + " ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						}						
 						go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
 						serverCount++
 					}
@@ -938,7 +749,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			rows3, err := db.Query(sqlQuery)
+			rows2, err := db.Query(sqlQuery)
 			if err != nil {
 				res.Page = strconv.Itoa(0)
 				res.Query = m["q"][0] //get original unsafe query
@@ -954,12 +765,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			for rows3.Next() {
+			for rows2.Next() {
 				count++
 				//this will get set if position of longest word of query is found within body
 				pos := -1
 
-				err := rows3.Scan(&id, &url, &title, &description, &body)
+				err := rows2.Scan(&id, &url, &title, &description, &body)
 				if err != nil {
 					error.Error = err.Error()
 					t, _ := template.ParseFiles("coreassets/error.html.go")
@@ -1074,8 +885,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				res.DBResults = append(res.DBResults, tRes)
 			}
-			defer rows3.Close()
-			rows3.Close()
+			defer rows2.Close()
+			rows2.Close()
 		}
 		//=======================================================================================================================
 		//http://go-database-sql.org/retrieving.html
@@ -1084,15 +895,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		db.Close()
 
 		//allow the find more link
-		if (countResults >= limInt || countResults > 2) && addWildcard == false && general == false{
+		if (countResults >= limInt || countResults > 2) && addWildcard == false{
 			res.FindMore = true
 		} else {
 			res.FindMore = false
-		}
-		if (countResults >= limInt || countResults > 2) && addWildcard == false && general == true{
-			res.FindMoreGeneral = true
-		} else {
-			res.FindMoreGeneral = false
 		}
 
 		if(pageInt == 0){

@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	//"fmt"
+//	"fmt"
 	"html"
 	"html/template"
 	"log"
@@ -24,7 +24,6 @@ type PageData struct {
 	DBResults         []MySQLResults
 	Query, Page string
 	FindMore bool
-	FindMoreGeneral bool
 }
 
 func main() {
@@ -97,12 +96,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		offset = page
 	}
 
-	//check if general search param exists
-	general := false
-	if _, ok := m["g"]; ok { 
-		general = true
-	}
-
 	lim := "12"
 
 	if query == "" { //what do if no query found?
@@ -146,6 +139,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		offsetInt = offsetInt * limInt
 		offset = strconv.Itoa(offsetInt)
 		
+
 		//get some details from the raw query
 		var additions string
 		querylen := len(query)
@@ -288,7 +282,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 			queryNoQuotes = queryNoQuotesOrFlags
 		}
-
 		//now find longest word
 		words = strings.Split(queryNoQuotes, " ")
 		if exactMatch == false {
@@ -357,199 +350,205 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes_SQLsafe + "\"' IN BOOLEAN MODE) THEN 25"
 		}
 
+		//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
+		if (strings.Contains(queryNoQuotes_SQLsafe, "-") || strings.Contains(queryNoQuotes_SQLsafe, "+")) && urlDetected == false {
+			hyphenwords := strings.Split(query, " ")
+			query = ""
+			quotes := 0
+			for i, word := range hyphenwords {
+				if strings.Contains(word, "\"") {
+					quotes++
+				}
+				if ((strings.Contains(word, "-") && word[0] != '-') || (strings.Contains(word, "+") && word[0] != '+')) && quotes%2 == 0 { //if hyphen or plus exists, not a flag, not wrapped in quotes already
+					word = "\"" + word + "\""
+				}
+				if i > 0 {
+					query += " "
+				}
+				query += word
+			}
+		}
 		//fmt.Printf(">%s<\n", query)
-
-		var sqlQuery, id, url, title, description, body string		
-		var ids[] string
-		count := 0
-		
 		queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
-		if(general == false){
+		//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
+		var sqlQuery, id, url, title, description, body string
+	
+		if(exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1){
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+		}else{
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+		}
 
-			//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+		/*sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""*/
 
-			rows, err := db.Query(sqlQuery)
 
+		
+		rows, err := db.Query(sqlQuery)
+//		fmt.Printf("\n%s\n",sqlQuery)
+		if err != nil {
+			res.Page = strconv.Itoa(0)
+			res.Query = m["q"][0] //get original unsafe query
+			if json {
+				w.Header().Set("Content-Type", "application/json")
+				t, _ := template.ParseFiles("coreassets/json/results.json.go")
+				t.Execute(w, res)
+			} else {
+				t, _ := template.ParseFiles("coreassets/results.html.go")
+				t.Execute(w, res)
+			}
+			//p := indexPage{}
+			//t, _ := template.ParseFiles("coreassets/form.html.go")
+			//t.Execute(w, p)
+			return
+		}
+
+		if urlDetected == true {
+			query = queryOriginal
+		}
+
+		count := 0
+
+		for rows.Next() {
+			count++
+			//this will get set if position of longest word of query is found within body
+			pos := -1
+
+			err := rows.Scan(&id, &url, &title, &description, &body)
 			if err != nil {
-				res.Page = strconv.Itoa(0)
-				res.Query = m["q"][0] //get original unsafe query
-				if json {
-					w.Header().Set("Content-Type", "application/json")
-					t, _ := template.ParseFiles("coreassets/json/results.json.go")
-					t.Execute(w, res)
-				} else {
-					t, _ := template.ParseFiles("coreassets/results.html.go")
-					t.Execute(w, res)
-				}
-				//p := indexPage{}
-				//t, _ := template.ParseFiles("coreassets/form.html.go")
-				//t.Execute(w, p)
-				return
+				error.Error = err.Error()
+				t, _ := template.ParseFiles("coreassets/error.html.go")
+				t.Execute(w, error)
 			}
 
-			if urlDetected == true {
-				query = queryOriginal
-			}
+			//find query inside body of page
+			if exactMatch == false {
+				/*					//remove the '*' if contained anywhere in query
+									if strings.Contains(queryNoQuotes,"*"){
+										queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+									}	*/
 
-			for rows.Next() {
-				count++
-				//this will get set if position of longest word of query is found within body
-				pos := -1
-
-				err := rows.Scan(&id, &url, &title, &description, &body)
-				if err != nil {
-					error.Error = err.Error()
-					t, _ := template.ParseFiles("coreassets/error.html.go")
-					t.Execute(w, error)
-				}
-				ids = append(ids,id)
-
-				//find query inside body of page
-				if exactMatch == false {
-					/*					//remove the '*' if contained anywhere in query
-										if strings.Contains(queryNoQuotes,"*"){
-											queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
-										}	*/
-
-					if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
-					} else if pos == -1 {
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-					}
-
-					if pos == -1 { //prepare to find position of longest query word (or required word) within body
-						//remove the '*' at the end of the longest word if present
-						if strings.Contains(longestWord, "*") {
-							longestWord = strings.Replace(longestWord, "*", "", -1)
-						}
-						//search within body for position of longest query word.
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
-						//not found?, set position to a different word, make sure there's no wildcard on it
-						if pos == -1 && wordcount > 1 {
-							if longestwordelementnum > 0 {
-								words[0] = strings.Replace(words[0], "*", "", -1)
-								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
-							}
-							if longestwordelementnum == 0 {
-								words[1] = strings.Replace(words[1], "*", "", -1)
-								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
-							}
-						}
-					}
-				} else { //if exact match, find position of query within body
+				if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
+					pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
+				} else if pos == -1 {
 					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
 				}
 
-				//still not found?, set position to 0
-				if pos == -1 {
-					pos = 0
-				}
-
-				//Adjust position for runes within body
-				pos = utf8.RuneCountInString(body[:pos])
-
-				starttext := 0
-				//ballpark := 0
-				ballparktext := ""
-
-				//figure out how much preceding text to use
-				if pos < 32 {
-					starttext = 0
-				} else if pos > 25 {
-					starttext = pos - 25
-				} else if pos > 20 {
-					starttext = pos - 15
-				}
-
-				//total length of the ballpark
-				textlength := 180
-
-				//populate the ballpark
-				if pos >= 0 {
-					ballparktext = substr(body, starttext, starttext+textlength)
-				} //else{ ballpark = 0}//looks unused
-
-				//find position of nearest Period
-				//foundPeriod := true
-				posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
-
-				//find position of nearest Space
-				//foundSpace := true
-				posSpace := strings.Index(ballparktext, " ") + starttext
-
-				//if longest word in query is after a period+space within ballpark, reset starttext to that point
-				if (pos - starttext) > posPeriod {
-					starttext = posPeriod
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = substr(body, starttext, starttext+textlength)
-					} else {
-						body = ""
+				if pos == -1 { //prepare to find position of longest query word (or required word) within body
+					//remove the '*' at the end of the longest word if present
+					if strings.Contains(longestWord, "*") {
+						longestWord = strings.Replace(longestWord, "*", "", -1)
 					}
-				} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
-					//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
-					starttext = posSpace
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = substr(body, starttext, starttext+textlength)
-					} else {
-						body = ""
-					}
-				} else //else just set the bodymatch to the ballparktext
-				{
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = ballparktext
-					} else {
-						body = ""
+					//search within body for position of longest query word.
+					pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
+					//not found?, set position to a different word, make sure there's no wildcard on it
+					if pos == -1 && wordcount > 1 {
+						if longestwordelementnum > 0 {
+							words[0] = strings.Replace(words[0], "*", "", -1)
+							pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
+						}
+						if longestwordelementnum == 0 {
+							words[1] = strings.Replace(words[1], "*", "", -1)
+							pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
+						}
 					}
 				}
-
-				tRes.Id = id
-				tRes.Url = url
-				tRes.Title = html.UnescapeString(title)
-				tRes.Description = html.UnescapeString(description)
-				tRes.Body = html.UnescapeString(body)
-				if json == true {
-					tRes.Title = JSONRealEscapeString(tRes.Title)
-					tRes.Description = JSONRealEscapeString(tRes.Description)
-					tRes.Body = JSONRealEscapeString(tRes.Body)
-				}
-				res.DBResults = append(res.DBResults, tRes)
+			} else { //if exact match, find position of query within body
+				pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
 			}
-			defer rows.Close()
-			rows.Close()
+
+			//still not found?, set position to 0
+			if pos == -1 {
+				pos = 0
+			}
+
+			//Adjust position for runes within body
+			pos = utf8.RuneCountInString(body[:pos])
+
+			starttext := 0
+			//ballpark := 0
+			ballparktext := ""
+
+			//figure out how much preceding text to use
+			if pos < 32 {
+				starttext = 0
+			} else if pos > 25 {
+				starttext = pos - 25
+			} else if pos > 20 {
+				starttext = pos - 15
+			}
+
+			//total length of the ballpark
+			textlength := 180
+
+			//populate the ballpark
+			if pos >= 0 {
+				ballparktext = substr(body, starttext, starttext+textlength)
+			} //else{ ballpark = 0}//looks unused
+
+			//find position of nearest Period
+			//foundPeriod := true
+			posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
+
+			//find position of nearest Space
+			//foundSpace := true
+			posSpace := strings.Index(ballparktext, " ") + starttext
+
+			//if longest word in query is after a period+space within ballpark, reset starttext to that point
+			if (pos - starttext) > posPeriod {
+				starttext = posPeriod
+				//populate the bodymatch
+				if (pos - starttext) >= 0 {
+					body = substr(body, starttext, starttext+textlength)
+				} else {
+					body = ""
+				}
+			} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
+				//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
+				starttext = posSpace
+				//populate the bodymatch
+				if (pos - starttext) >= 0 {
+					body = substr(body, starttext, starttext+textlength)
+				} else {
+					body = ""
+				}
+			} else //else just set the bodymatch to the ballparktext
+			{
+				//populate the bodymatch
+				if (pos - starttext) >= 0 {
+					body = ballparktext
+				} else {
+					body = ""
+				}
+			}
+
+			tRes.Id = id
+			tRes.Url = url
+			tRes.Title = html.UnescapeString(title)
+			tRes.Description = html.UnescapeString(description)
+			tRes.Body = html.UnescapeString(body)
+			if json == true {
+				tRes.Title = JSONRealEscapeString(tRes.Title)
+				tRes.Description = JSONRealEscapeString(tRes.Description)
+				tRes.Body = JSONRealEscapeString(tRes.Body)
+			}
+			res.DBResults = append(res.DBResults, tRes)
 		}
+		defer rows.Close()
+		rows.Close()
+		//================================================================================================================================
+		//no results found (count==0), so do a wildcard search (repeat the above process)
+		addWildcard := false
+		if count == 0 && offset == "0" && urlDetected == false && exactMatch == false {
+			addWildcard = true
+			query = strings.Replace(query, "\"", "", -1) //remove some things innodb gets fussy over
+			query = strings.Replace(query, "*", "", -1)
+			query = strings.Replace(query, "'", "", -1)
+			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "\"", "", -1)
+			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "*", "", -1)
+			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
+			query = query + "*"
 
-		//do a general search if exact results peter off
-		if(count < 8 && exactMatch == false){
-			count = 0
-			general = true
-
-			//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
-			if (strings.Contains(queryNoQuotes_SQLsafe, "-") || strings.Contains(queryNoQuotes_SQLsafe, "+") && urlDetected == false){
-				hyphenwords := strings.Split(query, " ")
-				query = ""
-				quotes := 0
-				for i, word := range hyphenwords {
-					if strings.Contains(word, "\"") {
-						quotes++
-					}
-					if ((strings.Contains(word, "-") && word[0] != '-') || (strings.Contains(word, "+") && word[0] != '+')) && quotes%2 == 0 { //if hyphen or plus exists, not a flag, not wrapped in quotes already
-						word = "\"" + word + "\""
-					}
-					if i > 0 {
-						query += " "
-					}
-					query += word
-				}
-			}
-
-			//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
-
-
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			rows2, err := db.Query(sqlQuery)
 			if err != nil {
 				res.Page = strconv.Itoa(0)
@@ -567,6 +566,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				//t.Execute(w, p)
 				return
 			}
+
 			for rows2.Next() {
 				count++
 				//this will get set if position of longest word of query is found within body
@@ -577,18 +577,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					error.Error = err.Error()
 					t, _ := template.ParseFiles("coreassets/error.html.go")
 					t.Execute(w, error)
-				}
-
-				//check for duplicates if appending general search matches on the same page where exact matches were found
-				duplicate := false;
-				for _, idcheck := range ids{
-					if idcheck == id{
-						duplicate = true
-						break
-					}
-				}
-				if(duplicate == true){
-					continue
 				}
 
 				//find query inside body of page
@@ -705,164 +693,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			defer rows2.Close()
 			rows2.Close()
 		}
-		//================================================================================================================================
-		//no results found (count==0), so do a wildcard search (repeat the above process but only for page 1)
-		addWildcard := false
-		if count == 0 && offset == "0" && urlDetected == false && exactMatch == false {
-			addWildcard = true
-			query = strings.Replace(query, "\"", "", -1) //remove some things innodb gets fussy over
-			query = strings.Replace(query, "*", "", -1)
-			query = strings.Replace(query, "'", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "\"", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "*", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
-			query = query + "*"
-
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
-			rows3, err := db.Query(sqlQuery)
-			if err != nil {
-				res.Page = strconv.Itoa(0)
-				res.Query = m["q"][0] //get original unsafe query
-				if json {
-					w.Header().Set("Content-Type", "application/json")
-					t, _ := template.ParseFiles("coreassets/json/results.json.go")
-					t.Execute(w, res)
-				} else {
-					t, _ := template.ParseFiles("coreassets/results.html.go")
-					t.Execute(w, res)
-				}
-				//p := indexPage{}
-				//t, _ := template.ParseFiles("coreassets/form.html.go")
-				//t.Execute(w, p)
-				return
-			}
-
-			for rows3.Next() {
-				count++
-				//this will get set if position of longest word of query is found within body
-				pos := -1
-
-				err := rows3.Scan(&id, &url, &title, &description, &body)
-				if err != nil {
-					error.Error = err.Error()
-					t, _ := template.ParseFiles("coreassets/error.html.go")
-					t.Execute(w, error)
-				}
-
-				//find query inside body of page
-				if exactMatch == false {
-					//remove the '*' if contained anywhere in query
-					/*if strings.Contains(queryNoQuotes,"*"){
-						queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
-					}*/
-					if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
-					} else if pos == -1 {
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-					}
-					if pos == -1 { //Not found? prepare to find position of longest query word within body
-						//remove the '*' at the end of the longest word if present
-						if strings.Contains(longestWord, "*") {
-							longestWord = strings.Replace(longestWord, "*", "", -1)
-						}
-						//search within body for position of longest query word.
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
-						//not found?, set position to a different word, make sure there's no wildcard on it
-						if pos == -1 && wordcount > 1 {
-							if longestwordelementnum > 0 {
-								words[0] = strings.Replace(words[0], "*", "", -1)
-								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
-							}
-							if longestwordelementnum == 0 {
-								words[1] = strings.Replace(words[1], "*", "", -1)
-								pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
-							}
-						}
-					}
-
-				} else { //if exact match, find position of query within body
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
-				}
-				//still not found?, set position to 0
-				if pos == -1 {
-					pos = 0
-				}
-
-				//Adjust position for runes within body
-				pos = utf8.RuneCountInString(body[:pos])
-
-				starttext := 0
-				//ballpark := 0
-				ballparktext := ""
-
-				//figure out how much preceding text to use
-				if pos < 32 {
-					starttext = 0
-				} else if pos > 25 {
-					starttext = pos - 25
-				} else if pos > 20 {
-					starttext = pos - 15
-				}
-
-				//total length of the ballpark
-				textlength := 180
-
-				//populate the ballpark
-				if pos >= 0 {
-					ballparktext = substr(body, starttext, starttext+textlength)
-				} //else{ ballpark = 0}//looks unused
-
-				//find position of nearest Period
-				//foundPeriod := true
-				posPeriod := strings.Index(ballparktext, ". ") + starttext + 1
-
-				//find position of nearest Space
-				//foundSpace := true
-				posSpace := strings.Index(ballparktext, " ") + starttext
-
-				//if longest word in query is after a period+space within ballpark, reset starttext to that point
-				if (pos - starttext) > posPeriod {
-					starttext = posPeriod
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = substr(body, starttext, starttext+textlength)
-					} else {
-						body = ""
-					}
-				} else if pos > posSpace { //else if longest word in query is after a space within ballpark, reset starttext to that point
-					//else if(pos-starttext) > posSpace//else if longest word in query is after a space within ballpark, reset starttext to that point
-					starttext = posSpace
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = substr(body, starttext, starttext+textlength)
-					} else {
-						body = ""
-					}
-				} else //else just set the bodymatch to the ballparktext
-				{
-					//populate the bodymatch
-					if (pos - starttext) >= 0 {
-						body = ballparktext
-					} else {
-						body = ""
-					}
-				}
-
-				tRes.Id = id
-				tRes.Url = url
-				tRes.Title = html.UnescapeString(title)
-				tRes.Description = html.UnescapeString(description)
-				tRes.Body = html.UnescapeString(body)
-				if json == true {
-					tRes.Title = JSONRealEscapeString(tRes.Title)
-					tRes.Description = JSONRealEscapeString(tRes.Description)
-					tRes.Body = JSONRealEscapeString(tRes.Body)
-				}
-				res.DBResults = append(res.DBResults, tRes)
-			}
-			defer rows3.Close()
-			rows3.Close()
-		}
 		//=======================================================================================================================
 		//http://go-database-sql.org/retrieving.html
 
@@ -870,17 +700,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		db.Close()
 
 		//If results = lim, allow the find more link
-		if count >= limInt && addWildcard == false && general == false{
+		if count >= limInt && addWildcard == false{
 			res.FindMore = true
 		} else {
 			res.FindMore = false
-		}
-
-		//If results = lim, allow the find more link
-		if count >= limInt && addWildcard == false && general == true{
-			res.FindMoreGeneral = true
-		} else {
-			res.FindMoreGeneral = false
 		}
 
 		if(pageInt == 0){
@@ -899,7 +722,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			t, _ := template.ParseFiles("coreassets/results.html.go")
 			t.Execute(w, res)
 		}
-
 	}
 }
 
@@ -1157,3 +979,38 @@ func searchredirect(w http.ResponseWriter, r *http.Request, query string) {
 	}
 }
 
+/*func caseInsenstiveContains(fullstring, substring string) bool {
+  return strings.Contains(strings.ToLower(fullstring), strings.ToLower(substring))
+}*/
+
+/*
+A QueryString is, by definition, in the URL. You can access the URL of the request using req.URL (doc). The URL object has a Query() method (doc) that returns a Values type, which is simply a map[string][]string of the QueryString parameters.
+
+If what you're looking for is the POST data as submitted by an HTML form, then this is (usually) a key-value pair in the request body. You're correct in your answer that you can call ParseForm() and then use req.Form field to get the map of key-value pairs, but you can also call FormValue(key) to get the value of a specific key. This calls ParseForm() if required, and gets values regardless of how they were sent (i.e. in query string or in the request body).
+
+req.URL.RawQuery returns everything after the ? on a GET request, if that helps.
+*/
+
+/*import (
+  "net/http"
+)
+
+func main() {
+  http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./"))))
+  if err := http.ListenAndServe(":8080", nil); err != nil {
+    panic(err)
+  }
+}*/
+
+/*func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "%s %s %s \n", r.Method, r.URL, r.Proto)
+    //Iterate over all header fields
+    for k, v := range r.Header {
+        fmt.Fprintf(w, "Header field %q, Value %q\n", k, v)
+    }
+
+    fmt.Fprintf(w, "Host = %q\n", r.Host)
+    fmt.Fprintf(w, "RemoteAddr= %q\n", r.RemoteAddr)
+    //Get value for a specified token
+    fmt.Fprintf(w, "\n\nFinding value of \"Accept\" %q", r.Header["Accept"])
+}*/
