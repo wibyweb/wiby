@@ -187,11 +187,13 @@ CREATE TABLE `windex` (
   `fault` tinyint(1) DEFAULT '0',
   `shard` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
+  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
+  FULLTEXT KEY `tags` (`tags`),
+  FULLTEXT KEY `body` (`body`),
+  FULLTEXT KEY `description` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -235,13 +237,14 @@ CREATE TABLE `ws0` (
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
+  `shard` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
+  FULLTEXT KEY `tags` (`tags`),
+  FULLTEXT KEY `description` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -285,13 +288,14 @@ CREATE TABLE `ws1` (
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
+  `shard` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
+  FULLTEXT KEY `tags` (`tags`),
+  FULLTEXT KEY `description` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -305,13 +309,13 @@ LOCK TABLES `ws1` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `ws10`
+-- Table structure for table `ws2`
 --
 
-DROP TABLE IF EXISTS `ws10`;
+DROP TABLE IF EXISTS `ws2`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws10` (
+CREATE TABLE `ws2` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -335,113 +339,14 @@ CREATE TABLE `ws10` (
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
+  `shard` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws10`
---
-
-LOCK TABLES `ws10` WRITE;
-/*!40000 ALTER TABLE `ws10` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws10` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws11`
---
-
-DROP TABLE IF EXISTS `ws11`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws11` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(1) DEFAULT NULL,
-  `http` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(1) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(1) DEFAULT NULL,
-  `force_rules` tinyint(1) DEFAULT NULL,
-  `enable` tinyint(1) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws11`
---
-
-LOCK TABLES `ws11` WRITE;
-/*!40000 ALTER TABLE `ws11` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws11` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws2`
---
-
-DROP TABLE IF EXISTS `ws2`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws2` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(1) DEFAULT NULL,
-  `http` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(1) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(1) DEFAULT NULL,
-  `force_rules` tinyint(1) DEFAULT NULL,
-  `enable` tinyint(1) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
+  FULLTEXT KEY `tags` (`tags`),
+  FULLTEXT KEY `description` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -470,28 +375,29 @@ CREATE TABLE `ws3` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(1) DEFAULT NULL,
-  `http` tinyint(1) DEFAULT NULL,
+  `surprise` tinyint(4) DEFAULT NULL,
+  `http` tinyint(4) DEFAULT NULL,
   `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(1) DEFAULT NULL,
+  `worksafe` tinyint(4) DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_pages` int(11) DEFAULT NULL,
   `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(1) DEFAULT NULL,
-  `force_rules` tinyint(1) DEFAULT NULL,
-  `enable` tinyint(1) DEFAULT NULL,
+  `crawl_repeat` tinyint(4) DEFAULT NULL,
+  `force_rules` tinyint(4) DEFAULT NULL,
+  `enable` tinyint(4) DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
+  `fault` tinyint(4) DEFAULT '0',
+  `shard` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
+  FULLTEXT KEY `tags` (`tags`),
+  FULLTEXT KEY `description` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -503,306 +409,6 @@ LOCK TABLES `ws3` WRITE;
 /*!40000 ALTER TABLE `ws3` DISABLE KEYS */;
 /*!40000 ALTER TABLE `ws3` ENABLE KEYS */;
 UNLOCK TABLES;
-
---
--- Table structure for table `ws4`
---
-
-DROP TABLE IF EXISTS `ws4`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws4` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(1) DEFAULT NULL,
-  `http` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(1) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(1) DEFAULT NULL,
-  `force_rules` tinyint(1) DEFAULT NULL,
-  `enable` tinyint(1) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws4`
---
-
-LOCK TABLES `ws4` WRITE;
-/*!40000 ALTER TABLE `ws4` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws4` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws5`
---
-
-DROP TABLE IF EXISTS `ws5`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws5` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(1) DEFAULT NULL,
-  `http` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(1) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(1) DEFAULT NULL,
-  `force_rules` tinyint(1) DEFAULT NULL,
-  `enable` tinyint(1) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws5`
---
-
-LOCK TABLES `ws5` WRITE;
-/*!40000 ALTER TABLE `ws5` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws5` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws6`
---
-
-DROP TABLE IF EXISTS `ws6`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws6` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws6`
---
-
-LOCK TABLES `ws6` WRITE;
-/*!40000 ALTER TABLE `ws6` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws6` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws7`
---
-
-DROP TABLE IF EXISTS `ws7`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws7` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws7`
---
-
-LOCK TABLES `ws7` WRITE;
-/*!40000 ALTER TABLE `ws7` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws7` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws8`
---
-
-DROP TABLE IF EXISTS `ws8`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws8` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws8`
---
-
-LOCK TABLES `ws8` WRITE;
-/*!40000 ALTER TABLE `ws8` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws8` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ws9`
---
-
-DROP TABLE IF EXISTS `ws9`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ws9` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `tags` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
-  `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `url` (`url`),
-  FULLTEXT KEY `url_noprefix` (`url_noprefix`),
-  FULLTEXT KEY `tags` (`tags`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ws9`
---
-
-LOCK TABLES `ws9` WRITE;
-/*!40000 ALTER TABLE `ws9` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ws9` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -813,4 +419,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-03-18 23:41:47
+-- Dump completed on 2023-03-24 23:20:57
