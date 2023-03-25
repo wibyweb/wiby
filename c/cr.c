@@ -91,8 +91,7 @@ int main(int argc, char **argv)
 		}
 		fclose(shardfile);
 	}else{
-                printf("\n'shards' file is missing. Create the file and indicate the number of available shards you are using or set it to 0 if you aren't. The default is 4.\n\n");
-                exit(0);
+                printf("\nWarning: 'shards' file is missing. Create the file and indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
         }
 	if(nShards > 0){
 		srand(time(NULL));
