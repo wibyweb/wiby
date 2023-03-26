@@ -25,8 +25,6 @@
     
     {{if .FindMore }}
         <p class="pin"><blockquote></p><br><a class="more" href="/?q={{.Query}}&p={{.Page}}">Find more...</a></blockquote>
-    {{else if .FindMoreGeneral }}
-        <p class="pin"><blockquote></p><br><a class="more" href="/?q={{.Query}}&p={{.Page}}&g">Find more...</a></blockquote>
     {{else}}
         <blockquote><p class="pin"> <br>That's everything I could find.<br>Help make me smarter by <a class="pin1" href="/submit">submitting a page</a>.</p></blockquote>
     {{end}}
