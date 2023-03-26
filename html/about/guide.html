@@ -149,7 +149,7 @@ go build 1core.go
 If you are just starting out, you can use '1core'. If you are going to setup replication servers or you are using a computer with a lot of available cores, you can use 'core', but make sure to read the scaling section.
 <br>
 <br>
-If you want to use 1core on a server separate from your reverse proxy server, modify line 38 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
+If you want to use 1core on a server separate from your reverse proxy server, modify line 37 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
 <br>
 <br>
 You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version is used mainly for prototyping.
@@ -297,7 +297,7 @@ You can run the core server on startup with a cron job.
 If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have a lot of available CPU cores. Make sure to read the scaling section. 
 <br>
 <br>
-If you want to use 1core on a server separate from your reverse proxy server, modify line 38 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
+If you want to use 1core on a server separate from your reverse proxy server, modify line 37 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
 <br>
 <br>
 <h3>Set Administrator Password for the Web Interface</h3>
