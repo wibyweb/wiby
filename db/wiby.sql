@@ -192,8 +192,8 @@ CREATE TABLE `windex` (
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `tags` (`tags`),
-  FULLTEXT KEY `body` (`body`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `description` (`description`),
+  FULLTEXT KEY `body` (`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -244,7 +244,8 @@ CREATE TABLE `ws0` (
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
   FULLTEXT KEY `tags` (`tags`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `description` (`description`),
+  FULLTEXT KEY `body` (`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -295,7 +296,8 @@ CREATE TABLE `ws1` (
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
   FULLTEXT KEY `tags` (`tags`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `description` (`description`),
+  FULLTEXT KEY `body` (`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -346,7 +348,8 @@ CREATE TABLE `ws2` (
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
   FULLTEXT KEY `tags` (`tags`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `description` (`description`),
+  FULLTEXT KEY `body` (`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -397,7 +400,8 @@ CREATE TABLE `ws3` (
   FULLTEXT KEY `url` (`url`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`),
   FULLTEXT KEY `tags` (`tags`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `description` (`description`),
+  FULLTEXT KEY `body` (`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -419,4 +423,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-03-24 23:20:57
+-- Dump completed on 2023-03-26 22:26:24
