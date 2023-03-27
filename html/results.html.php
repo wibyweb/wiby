@@ -5,12 +5,12 @@
     <title><?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?></title>  
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
 	<link rel=stylesheet href="/styles.css" type="text/css"> 
-	<link rel="search" type="application/opensearchdescription+xml" title="your title" href="/opensearch.xml">	
+	<link rel="search" type="application/opensearchdescription+xml" title="wiby search" href="/opensearch.xml">	
   </head>  
   <body>
     <form method="get">    
       <div style="float: left">
-        <a class="title" href="../">name</a>&nbsp;&nbsp;
+        <a class="title" href="../">wiby</a>&nbsp;&nbsp;
         <input type="text" size="35" name="q" id="q" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?>" role="form" aria-label="Main search form"/>
         <input type="submit" value="Search"/>
       </div>    
@@ -32,7 +32,7 @@
 		  <?php echo $description[$i]; $i++; ?>
 		</blockquote>  
     <?php endforeach; ?>  
-    <?php if($i > 2 && $starappend == 0 && $general==0): ?> 
+    <?php if($i > 2 && $starappend == 0): ?> 
         <p class="pin"><blockquote></p><br><a class="tlink" href="/?q=<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?>&p=<?php echo $page;?>">Find more...</a></blockquote>      
     <?php else: ?>
         <blockquote><p class="pin"> <br>That's everything I could find.<br>Help make me smarter by <a class="pin1" href="/submit">submitting a page</a>.</p></blockquote>
