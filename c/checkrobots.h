@@ -32,10 +32,11 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 	memset(rwindow,'?',rwindow_len);
 //	rwindow[rwindow_len]=0;
 	
-	//curl_global_init(CURL_GLOBAL_ALL);
+	curl_global_init(CURL_GLOBAL_DEFAULT);
 	CURL *curl;
 	FILE *fp;
 	CURLcode res;
+	curl = curl_easy_init();
 	memset(robotsurl,0,1011);
 	strcpy(robotsurl,rURLprefix);
 	strcat(robotsurl,rDomain);
@@ -45,10 +46,9 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 	strcpy(outfilename,"robots/");
 	strcat(outfilename,rDomain);
 	strcat(outfilename,".txt");
-	curl = curl_easy_init();
 	long fsize=0,response_code_checkrobots=0;	
 	char *finalURL_checkrobots = NULL;
-	int foundfile=0;
+	int foundfile=0,alloced=0;
 	char rb,rwb;
 	printf("\nChecking robots.txt: ");
 
@@ -59,6 +59,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		fseek(robotsfile, 0, SEEK_SET);  /* same as rewind(f); */
 
 		robotsfilestr = malloc(fsize + 1);
+		alloced=1;
 		if(fread(robotsfilestr, 1, fsize, robotsfile)){}
 		fclose(robotsfile);
 
@@ -71,7 +72,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		if(fp = fopen(outfilename,"wb")){
 			//set curl options
 			curl_easy_setopt(curl, CURLOPT_URL, robotsurl);// set URL to get here 
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; compatible; WebCrawler; SearchEngine)"); 
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; Wibybot; https://wiby.me/)"); 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data_checkrobots);// send all data to this function  // 
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);// write the page body to this file handle  
 			curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,1L);//allow redirects
@@ -83,13 +84,15 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 			res = curl_easy_perform(curl);// get it! 
 			curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &finalURL_checkrobots);
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code_checkrobots);
-			curl_easy_cleanup(curl);// always cleanup 
+			//curl_easy_cleanup(curl);// always cleanup (done further down)
 			fclose(fp);
 			if(response_code_checkrobots!=200){
 				fp = fopen(outfilename,"wb");
 				fclose(fp);
 			}
 		}else{
+			curl_easy_cleanup(curl);
+			curl_global_cleanup();
 			printf("\nFailed to create file: %s - proceeding anyway.",outfilename);
 			return 1;
 		}
@@ -101,6 +104,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		fseek(robotsfile, 0, SEEK_SET);  // same as rewind(f); 
 
 		robotsfilestr = malloc(fsize + 1);
+		alloced=1;
 		if(fread(robotsfilestr, 1, fsize, robotsfile)){}
 		fclose(robotsfile);
 
@@ -190,6 +194,10 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 					}
 					if((i==fsize-1 && match==1) || ((rwb==10 || rwb==13) && match==1)){
 						printf("Permitted.");
+						curl_easy_cleanup(curl);
+						curl_global_cleanup();
+						if(alloced==1)
+							free(robotsfilestr);
 						return 1;
 					}
 					if(match==0)
@@ -214,13 +222,24 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		
 		if(result==0){
 			printf("Denied.");
+			curl_easy_cleanup(curl);
+			curl_global_cleanup();
+			if(alloced==1)
+				free(robotsfilestr);
 			return 0;
 		}else{
 			printf("Permitted.");
+			curl_easy_cleanup(curl);
+			curl_global_cleanup();
+			if(alloced==1)
+				free(robotsfilestr);
 			return 1;
 		}
 	}
 	printf("Permitted.");
+	curl_easy_cleanup(curl);
+	if(alloced==1)
+		free(robotsfilestr);
 	return 1;
 }
 

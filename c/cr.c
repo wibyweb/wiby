@@ -23,9 +23,9 @@ char *shardfilestr;
 
 void finish_with_error(MYSQL *con)
 {
-  fprintf(stderr, "%s\n", mysql_error(con));
-  mysql_close(con);
-  exit(1);        
+	fprintf(stderr, "%s\n", mysql_error(con));
+	mysql_close(con);
+	exit(1);        
 }
 int isnum(char *source){
 	int sourcelength = strlen(source);
@@ -37,8 +37,8 @@ int isnum(char *source){
 	return 1;
 }
 size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-    size_t written = fwrite(ptr, size, nmemb, stream);
-    return written;
+	size_t written = fwrite(ptr, size, nmemb, stream);
+	return written;
 }
 
 int main(int argc, char **argv)
@@ -60,7 +60,8 @@ int main(int argc, char **argv)
 
 	//check if there are shards to include
 	int nShards=0,fsize=0,shardnum=0;
-	char shardc, numshards[20], shardnumstr[20];
+	char numshards[20], shardnumstr[20];
+	memset(numshards,0,20);
 	memset(shardnumstr,0,20);
 	sprintf(shardnumstr,"0");
 	if(shardfile = fopen("shards", "r")){
@@ -72,16 +73,15 @@ int main(int argc, char **argv)
 			if(fread(shardfilestr, 1, fsize, shardfile)){}
 			shardfilestr[fsize] = 0;
 			for(int i=0;i<fsize;i++){
-				shardc = shardfilestr[i];
-				if(shardc != 10 && shardc != 13){
-					numshards[i]=shardc;
+				if(shardfilestr[i] > 47 && shardfilestr[i] < 58){
+					numshards[i]=shardfilestr[i];
 				}
 			}
 			//check if its a number
 			if(isnum(numshards)==1){
 				nShards = atoi(numshards);
 			}else{
-				printf("\nThe shard file contains gibberish: '%s'. Fix this to continue.",shardfilestr);
+				printf("\nThe shard file must contain a number. Indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
 				exit(0);
 			}
 			free(shardfilestr);
@@ -91,8 +91,8 @@ int main(int argc, char **argv)
 		}
 		fclose(shardfile);
 	}else{
-                printf("\nWarning: 'shards' file is missing. Create the file and indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
-        }
+		printf("\nWarning: 'shards' file is missing. Create the file and indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
+	}
 	if(nShards > 0){
 		srand(time(NULL));
 		shardnum = (rand() % nShards);
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 	{	
 		//printf("MySQL client version: %s\n", mysql_get_client_info());
 		int alreadydone = 0, permitted=1;
-		 //allocates or initialises a MYSQL object
+		//allocates or initialises a MYSQL object
 
 		MYSQL *con = mysql_init(NULL);
 
@@ -121,13 +121,13 @@ int main(int argc, char **argv)
 
 		if (mysql_query(con, "SET CHARSET utf8;")) 
 		{
-		    finish_with_error(con);
+			finish_with_error(con);
 		}
-		
+
 		if(id_assigned == 0){
 			if (mysql_query(con, "SELECT id, url, worksafe, approver, surprise, updatable, task, crawl_tree, crawl_family, crawl_depth, crawl_pages, crawl_type, crawl_repeat, force_rules FROM indexqueue limit 1;")) 
 			{
-			    	finish_with_error(con);
+				finish_with_error(con);
 			}
 		}else{
 			char indexqueuequery[2001];
@@ -137,13 +137,13 @@ int main(int argc, char **argv)
 			strcat(indexqueuequery,"' LIMIT 1;");
 			if (mysql_query(con, indexqueuequery)) 
 			{
-			    	finish_with_error(con);
+				finish_with_error(con);
 			}
 		}
 
 		//We get the result set using the mysql_store_result() function. The MYSQL_RES is a structure for holding a result set
 		MYSQL_RES *result = mysql_store_result(con);
-		
+
 		if(result == NULL)
 		{
 			finish_with_error(con);
@@ -154,17 +154,17 @@ int main(int argc, char **argv)
 
 		//We fetch the rows and print them to the screen. 
 		/*MYSQL_ROW row;
-		while (row = mysql_fetch_row(result))	
-		{
-			for(int i=0; i<num_fields; i++)
-			{
-				printf("%s ", row[i] ? row[i] : "NULL");
-			}
-			printf("\n");
-		}*/
+		  while (row = mysql_fetch_row(result))	
+		  {
+		  for(int i=0; i<num_fields; i++)
+		  {
+		  printf("%s ", row[i] ? row[i] : "NULL");
+		  }
+		  printf("\n");
+		  }*/
 
 		MYSQL_ROW row = mysql_fetch_row(result);
-		
+
 		int empty=0;
 		if(row == NULL){
 			//printf("\nQueue is empty\n");
@@ -181,9 +181,9 @@ int main(int argc, char **argv)
 			printf("-----------------------------------------------------------------------------------\nFetching:");
 			//grab the first entry (fifo)
 			/*for(int i=0; i<num_fields; i++)
-			{
-				printf("%s ", row[i] ? row[i] : "NULL");
-			}*/
+			  {
+			  printf("%s ", row[i] ? row[i] : "NULL");
+			  }*/
 
 			//Store data in first row into variables
 			char *url = row[1];
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 			char *crawl_type = row[11];
 			char *crawl_repeat = row[12];
 			char *force_rules = row[13];
-			
+
 			//convert crawl depth, pages to int
 			int n_crawl_depth=0, n_crawl_pages=0;
 			if(crawl_depth!=0){
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 			}
 
 			//set the prefix
-			
+
 			if(http > 0) strcat(prefix,"://");
 			else if(https > 0) strcat(prefix,"s://");
 			else if(httpwww > 0) strcat(prefix,"://www.");
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 
 			if (mysql_query(con, checkurl)) 
 			{
-			    finish_with_error(con);
+				finish_with_error(con);
 			}
 
 			//We get the result set using the mysql_store_result() function. The MYSQL_RES is a structure for holding a result set
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 			{
 				finish_with_error(con);
 			}
-	
+
 			//grab the first entry (fifo)
 			printf("Found ID ");
 			row = mysql_fetch_row(resulturlcheck);
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 			char *fault;
 			char *dburl;
 			char *shard;
-			
+
 			//Catalog the previous crawl attempts (to see if they are all for the same page - which would be a bad sign)
 			previousID[4] = previousID[3];
 			previousID[3] = previousID[2];
@@ -405,13 +405,13 @@ int main(int argc, char **argv)
 				}else{
 					sanity = 1;
 				}
-				
+
 			}else{
 				sanity = 1;
 			}
 
 			//printf("\n\n%ld, %ld, %ld, %ld, %ld\n",previousID[0],previousID[1],previousID[2],previousID[3],previousID[4]);
-			
+
 			//see if the server will accept http only connections on older browsers, change url to HTTP only:
 			char urlHTTP[strlen(url)+100];
 			memset(urlHTTP,0,strlen(url)+100);
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
 				printf("\nAttempt HTTP connection: %s",urlHTTP);
 				printf("\nDownloading page... ");
 				//===============do the curl (download the webpage)=====================
-				//curl_global_init(CURL_GLOBAL_ALL);
+				curl_global_init(CURL_GLOBAL_DEFAULT);
 				CURL *curl;
 				FILE *fp;
 				CURLcode res;
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 					}
 
 					//curl_easy_cleanup(curl); //cleanup moved further down because finalURL is needed at insert
-					
+
 					//get file size
 					fseek(fp, 0L, SEEK_END);
 					size = ftell(fp);
@@ -495,7 +495,7 @@ int main(int argc, char **argv)
 					else if(http > 0 || httpwww > 0){
 						httpAllow[0] = '1';
 					}
-					
+
 					//Remove the prefix from the final URL, to store into url_noprefix
 					//find out if its http or https or http://www. or https://www.
 					httpwww=httpswww=http=https=0;
@@ -541,7 +541,7 @@ int main(int argc, char **argv)
 						strcat(doublecheckurl,"';");
 						if (mysql_query(con, doublecheckurl)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						resulturlcheck = mysql_store_result(con);
 						if(resulturlcheck == NULL)
@@ -586,7 +586,7 @@ int main(int argc, char **argv)
 					if(alreadydone==0 && id_assigned==1 && idexistsalready==1){
 						if (mysql_query(con, "use wibytemp;")) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						memset(idReserve,0,100);
 						strcpy(idReserve,"INSERT into reserve_id (id) VALUES (");
@@ -605,7 +605,7 @@ int main(int argc, char **argv)
 						//back to wiby database
 						if (mysql_query(con, "use wiby;")) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						updatereserve=1;
 						if(alreadydone==0){
@@ -646,7 +646,7 @@ int main(int argc, char **argv)
 							//query db
 							if (mysql_query(con, checkurl)) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							MYSQL_RES *resulturlcheck = mysql_store_result(con);
 							if(resulturlcheck == NULL)
@@ -719,18 +719,18 @@ int main(int argc, char **argv)
 					windexupdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
 					windexRandUpdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
 					titlecheckinsert = (char*)calloc(finalURLsize+titlesize+1001,sizeof(char));
-					
+
 					/*if(title == NULL || keywords == NULL || description == NULL || page == NULL || windexinsert == NULL || windexupdate == NULL)
-					{
-						printf("\nError allocating memory for webpage");
-						//cleanup sql stuff
-						mysql_free_result(resulturlcheck);
-						mysql_free_result(result);
-						mysql_close(con);
-						exit(0);
+					  {
+					  printf("\nError allocating memory for webpage");
+					//cleanup sql stuff
+					mysql_free_result(resulturlcheck);
+					mysql_free_result(result);
+					mysql_close(con);
+					exit(0);
 					}*/
 
-				
+
 					//Check if this is a new page: check if the title found in windex is the same as the parsed title. If not, put the page back into review.
 					int dbtitlesize = 0,titlecheckTitleSize = 0, dbNoTitle=0,extrapos=0;				
 					if(idexistsalready==1)
@@ -742,12 +742,12 @@ int main(int argc, char **argv)
 
 						if (mysql_query(con, "use wibytemp;")) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						//set charset based on crawled page charset tag
 						if (mysql_query(con, mysqlcharset))
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						//insert title into wibytemp for comparison
 						strcpy(titlecheckinsert,"INSERT INTO titlecheck (url,title) VALUES ('");
@@ -757,11 +757,11 @@ int main(int argc, char **argv)
 						strcat(titlecheckinsert,"');");
 						if (mysql_query(con, titlecheckinsert)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						if (mysql_query(con, "SET CHARSET utf8;")) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						//now read back the title from the database
 						char checktitle[finalURLsize+dbtitlesize+1000];
@@ -771,14 +771,14 @@ int main(int argc, char **argv)
 						//query db
 						if (mysql_query(con, checktitle)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 						MYSQL_RES *resulttitlecheck = mysql_store_result(con);
 						if(resulttitlecheck == NULL)
 						{
 							finish_with_error(con);
 						}
-	
+
 						//grab the first entry (fifo)
 						MYSQL_ROW rowTitleCheck = mysql_fetch_row(resulttitlecheck);
 						char *titlecheckTitle;
@@ -793,13 +793,13 @@ int main(int argc, char **argv)
 						strcat(titlecheckremove,finalURL);strcat(titlecheckremove,"';");
 						if (mysql_query(con, titlecheckremove)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 
 						//back to wiby database
 						if (mysql_query(con, "use wiby;")) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 
 						//check if original dburl is now getting redirected from finalurl (should be sent to review)
@@ -868,7 +868,7 @@ int main(int argc, char **argv)
 									dbNoTitle=0;
 							}
 						}
-						
+
 						//if((dbNoTitle == 0 && dbtitlesize != (titlesize-extrapos)) || (dbNoTitle == 1 && titlesize > 0 && emptytitle == 0))  //previous, before db wibytemp titlecheck method
 						if((dbNoTitle == 0 && dbtitlesize != titlecheckTitleSize) || (dbNoTitle == 1 && titlesize > 0 && emptytitle == 0) || (URL_is_dbtitle == 1 && dbtitlesize != titlecheckTitleSize && titlesize > 0 && emptytitle == 0))
 						{
@@ -886,12 +886,12 @@ int main(int argc, char **argv)
 
 						if (mysql_query(con, mysqlcharset))//set charset based on page charset tag
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 
 						//strcpy(windexinsert,"INSERT INTO windex (url,title,tags,description,body,worksafe,enable,date,approver,surprise,updatable) VALUES ('");
 						strcpy(windexinsert,"INSERT INTO windex (url,url_noprefix,title,description,body,worksafe,enable,date,approver,surprise,http,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,shard) VALUES ('");
-						
+
 						strcpy(windexupdate,"UPDATE windex SET url = '");
 
 						int copiedRandom = 0;
@@ -914,12 +914,12 @@ int main(int argc, char **argv)
 
 							if (mysql_query(con, "SELECT id, shard, url_noprefix FROM windex WHERE enable = 1 ORDER BY rand() LIMIT 1;")) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}						
 							resultRandID = mysql_store_result(con);
 							if (resultRandID==NULL) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							MYSQL_ROW row = mysql_fetch_row(resultRandID);
 							if(row != NULL){
@@ -933,7 +933,7 @@ int main(int argc, char **argv)
 							if(row != NULL && id_assigned==1){
 								if (mysql_query(con, "use wibytemp;")) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 								memset(randomreserve,0,100);
 								strcpy(randomreserve,"INSERT into reserve_id (id) VALUES (");
@@ -952,7 +952,7 @@ int main(int argc, char **argv)
 								//back to wiby database
 								if (mysql_query(con, "use wiby;")) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}								
 							}
 
@@ -1013,7 +1013,7 @@ int main(int argc, char **argv)
 								strcat(windexinsert,")");
 								if (mysql_query(con, windexinsert)) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 
 								//insert into the shard table for the new row
@@ -1023,30 +1023,30 @@ int main(int argc, char **argv)
 									strcat(windexinsert,shardnumstr);
 									strcat(windexinsert," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = LAST_INSERT_ID();");
 									/*//get the last ID
-									MYSQL_RES *resultIDnum;
-									char *lastIDnum;
+									  MYSQL_RES *resultIDnum;
+									  char *lastIDnum;
 
-									if (mysql_query(con, "SELECT LAST_INSERT_ID() FROM windex limit 1")) 
-									{
-									    finish_with_error(con);
-									}	
-									MYSQL_ROW rowLastID = mysql_fetch_row(resultIDnum);
-									if(rowLastID != NULL){
-										lastIDnum = rowLastID[0];
-									}						
+									  if (mysql_query(con, "SELECT LAST_INSERT_ID() FROM windex limit 1")) 
+									  {
+									  finish_with_error(con);
+									  }	
+									  MYSQL_ROW rowLastID = mysql_fetch_row(resultIDnum);
+									  if(rowLastID != NULL){
+									  lastIDnum = rowLastID[0];
+									  }						
 
-									strcpy(shardinsert,"INSERT INTO ws");
-									strcat(shardinsert,shardnumstr);
-									strcat(shardinsert," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = ");
-									strcat(shardinsert,lastIDnum);
-									if (mysql_query(con, shardinsert)) 
-									{
-									    finish_with_error(con);
-									}
-									mysql_free_result(resultIDnum);	*/
+									  strcpy(shardinsert,"INSERT INTO ws");
+									  strcat(shardinsert,shardnumstr);
+									  strcat(shardinsert," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = ");
+									  strcat(shardinsert,lastIDnum);
+									  if (mysql_query(con, shardinsert)) 
+									  {
+									  finish_with_error(con);
+									  }
+									  mysql_free_result(resultIDnum);	*/
 									if (mysql_query(con, windexinsert)) 
 									{
-									    finish_with_error(con);
+										finish_with_error(con);
 									}
 								}			
 							}
@@ -1056,7 +1056,7 @@ int main(int argc, char **argv)
 								strcat(windexRandUpdate,randID);
 								if (mysql_query(con, windexRandUpdate))
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 								if(nShards>0){//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
 									//update the shard id in windex
@@ -1066,7 +1066,7 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate," WHERE id = LAST_INSERT_ID()");
 									if (mysql_query(con, windexRandUpdate))
 									{
-									    finish_with_error(con);
+										finish_with_error(con);
 									}
 									//insert that row into the next shard
 									memset(windexRandUpdate,0,strlen(windexRandUpdate));
@@ -1075,7 +1075,7 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate," (id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard) SELECT id,url,url_noprefix,title,tags,description,body,surprise,http,updatable,worksafe,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,enable,date,updated,approver,fault,shard FROM windex WHERE id = LAST_INSERT_ID()");
 									if (mysql_query(con, windexRandUpdate))
 									{
-									    finish_with_error(con);
+										finish_with_error(con);
 									}
 
 									//Overwrite the randomly selected row with the contents of the newly crawled webpage
@@ -1133,9 +1133,9 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate,randID);
 									if (mysql_query(con, windexRandUpdate))
 									{
-									    finish_with_error(con);
+										finish_with_error(con);
 									}
-																
+
 									//Finally, update the corresponding shard table row
 									if(randshard != 0){
 										memset(windexRandUpdate,0,strlen(windexRandUpdate));
@@ -1194,7 +1194,7 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,randID);
 										if (mysql_query(con, windexRandUpdate))
 										{
-										    finish_with_error(con);
+											finish_with_error(con);
 										}	
 									}
 								}
@@ -1263,7 +1263,7 @@ int main(int argc, char **argv)
 							strcat(windexupdate,idexistsvalue);//will be same as randID if a new page is replacing that row
 							if (mysql_query(con, windexupdate)) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 
 							//update shard
@@ -1317,7 +1317,7 @@ int main(int argc, char **argv)
 								strcat(windexupdate,idexistsvalue);//will be same as randID if a new page is replacing that row
 								if (mysql_query(con, windexupdate)) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 							}
 						}
@@ -1326,7 +1326,7 @@ int main(int argc, char **argv)
 						if(id_assigned==1 && idexistsalready==0 && reserveFail==0){
 							if (mysql_query(con, "use wibytemp;")) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							memset(randomreserve,0,100);
 							strcpy(randomreserve,"DELETE FROM reserve_id where id = ");
@@ -1339,14 +1339,14 @@ int main(int argc, char **argv)
 							//back to wiby database
 							if (mysql_query(con, "use wiby;")) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}							
 						}
 						//unreserve ID if doing an update 
 						if(id_assigned==1 && updatereserve==1){
 							if (mysql_query(con, "use wibytemp;")) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							memset(idReserve,0,100);
 							strcpy(idReserve,"DELETE FROM reserve_id where id = ");
@@ -1359,14 +1359,14 @@ int main(int argc, char **argv)
 							//back to wiby database
 							if (mysql_query(con, "use wiby;")) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 						}
 						//free result
 						if(idexistsalready == 0){
 							mysql_free_result(resultRandID);							
 						}
-						
+
 						//===================remove the entry from the indexqueue===============
 						//printf("\nRemoving from queue...");
 						char sqlqueryremove[200];
@@ -1375,9 +1375,9 @@ int main(int argc, char **argv)
 						strcat(sqlqueryremove,id);strcat(sqlqueryremove,";");
 						if (mysql_query(con, sqlqueryremove)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
-	
+
 						printf("\n\nSuccess!");
 					}
 					//clear page from memory
@@ -1405,10 +1405,10 @@ int main(int argc, char **argv)
 					memset(sqlqueryremove,0,200);
 					strcpy(sqlqueryremove,"DELETE FROM indexqueue WHERE id=");
 					strcat(sqlqueryremove,id);strcat(sqlqueryremove,";");
-					
+
 					if (mysql_query(con, sqlqueryremove)) 
 					{
-					    finish_with_error(con);
+						finish_with_error(con);
 					}
 					if(alreadydone==0){
 						if(idexistsalready == 1 && fault[0] == '1')
@@ -1427,7 +1427,7 @@ int main(int argc, char **argv)
 							strcat(sqlqueryremove,idexistsvalue);
 							if (mysql_query(con, sqlqueryremove)) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							if(nShards > 0 && shard != 0){
 								memset(sqlqueryremove,0,200);
@@ -1437,7 +1437,7 @@ int main(int argc, char **argv)
 								strcat(sqlqueryremove,idexistsvalue);
 								if (mysql_query(con, sqlqueryremove)) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 							}
 							if(crawl_family == 0 || (crawl_family != 0 && crawl_family[0] =='0')){
@@ -1448,7 +1448,7 @@ int main(int argc, char **argv)
 								strcat(sqlqueryreview,worksafe);strcat(sqlqueryreview,");");	
 								if (mysql_query(con, sqlqueryreview)) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 							}
 						}
@@ -1461,7 +1461,7 @@ int main(int argc, char **argv)
 							strcat(sqlqueryfault,idexistsvalue);
 							if (mysql_query(con, sqlqueryfault)) 
 							{
-							    finish_with_error(con);
+								finish_with_error(con);
 							}
 							if(nShards>0 && shard != 0){
 								memset(sqlqueryfault,0,450);
@@ -1471,7 +1471,7 @@ int main(int argc, char **argv)
 								strcat(sqlqueryfault,idexistsvalue);
 								if (mysql_query(con, sqlqueryfault)) 
 								{
-								    finish_with_error(con);
+									finish_with_error(con);
 								}
 							}				
 						}
@@ -1481,16 +1481,16 @@ int main(int argc, char **argv)
 							fputs ("\r\n",abandoned);
 							fclose(abandoned);
 						}
-				}
+					}
 
-				//check if link crawling is specified
-				//make sure duplicates don't get crawled more than once
-				//check db if its already indexed too - do this at beginning instead?
+					//check if link crawling is specified
+					//make sure duplicates don't get crawled more than once
+					//check db if its already indexed too - do this at beginning instead?
 
-				//crawl links if refresh is from link crawler, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set
+					//crawl links if refresh is from link crawler, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set
 				}else if(nofollow==0 && getURLs==1 && alreadydone==0){
 					//cycle through url list, then construct an sql string around it, then insert it to indexqueue;	
-					
+
 					//force crawl depth of 1 during a refresh if crawl_repeat is set
 					if(crawl_repeat != 0 && crawl_repeat[0]=='1' && task != 0 && task[0]=='1'){
 						n_crawl_depth=1;
@@ -1514,7 +1514,7 @@ int main(int argc, char **argv)
 					while(urlListShuffled[loopcount]!=0){
 						switch(urlListShuffled[loopcount]){
 							case '\n' ://see if url can be indexed, if so, add to sql insert statement
-	
+
 								urlparse(url_fromlist);
 
 								//check if internal or external url
@@ -1643,7 +1643,7 @@ int main(int argc, char **argv)
 									}
 									strcat(url_insert,")");										
 								}
-								
+
 								memset(url_fromlist,0,url_fromlist_arraylen);
 								elementnum=0;
 								loopcount++;
@@ -1662,12 +1662,14 @@ int main(int argc, char **argv)
 						//insert into db
 						if (mysql_query(con, url_insert)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 					}
 				}
-				if (curl)
+				if (curl){
 					curl_easy_cleanup(curl);// cleanup curl (finalURL used at inserts, thats why we cleanup and the end here 
+					curl_global_cleanup();	
+				} 
 			}else{
 				if(alreadydone == 0){
 					printf("\nPage was flagged as unable to crawl or banned.");
@@ -1681,7 +1683,7 @@ int main(int argc, char **argv)
 				strcat(sqlqueryremove,id);
 				if (mysql_query(con, sqlqueryremove)) 
 				{
-				    finish_with_error(con);
+					finish_with_error(con);
 				}
 				if(idexistsalready==1 && permitted==0){
 					printf(" Removing from index...");
@@ -1691,7 +1693,7 @@ int main(int argc, char **argv)
 					strcat(sqlqueryremove," AND updatable != '0'");
 					if (mysql_query(con, sqlqueryremove)) 
 					{
-					    finish_with_error(con);
+						finish_with_error(con);
 					}	
 					if(nShards>0 && shard != 0){
 						memset(sqlqueryremove,0,200);
@@ -1702,7 +1704,7 @@ int main(int argc, char **argv)
 						strcat(sqlqueryremove," AND updatable != '0'");
 						if (mysql_query(con, sqlqueryremove)) 
 						{
-						    finish_with_error(con);
+							finish_with_error(con);
 						}
 					}				
 				}
@@ -1721,8 +1723,7 @@ int main(int argc, char **argv)
 					shardnum=0;
 				sprintf(shardnumstr,"%d",shardnum);
 			}
-
-			printf(" Awaiting next page in queue...\n\n");
+				printf(" Awaiting next page in queue...\n\n");
 		}
 		//cleanup more sql stuff
 		mysql_free_result(result);
@@ -1731,5 +1732,6 @@ int main(int argc, char **argv)
 		if(empty==1)
 			sleep(5);//sleep 5 seconds
 	}
-  	exit(0);
+	exit(0);
 }
+
