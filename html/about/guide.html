@@ -166,7 +166,7 @@ default-character-set = utf8mb4
 
 [mysqld]
 max_connections = 400
-ft_min_word_len=2
+ft_min_word_len=1
 sql_mode = "NO_BACKSLASH_ESCAPES"
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_520_ci
@@ -177,7 +177,6 @@ wait_timeout = 800
 
 #memory use settings, you should adjust this based on your hardware
 innodb_buffer_pool_size = 1342177280
-innodb_buffer_pool_instances = 2
 innodb_flush_method = O_DIRECT
 
 </pre>
@@ -504,7 +503,7 @@ default-character-set = utf8mb4
 
 [mysqld]
 max_connections = 400
-ft_min_word_len=2
+ft_min_word_len=1
 sql_mode = "NO_BACKSLASH_ESCAPES"
 #character-set-client-handshake = FALSE
 character-set-server = utf8mb4
@@ -516,7 +515,6 @@ wait_timeout = 800
 
 #memory use settings, you should adjust this based on your hardware
 innodb_buffer_pool_size = 1342177280
-innodb_buffer_pool_instances = 2
 innodb_flush_method = O_DIRECT
 
 #setting up replication below
