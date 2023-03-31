@@ -1,13 +1,10 @@
 //Wiby replication server tracker
-//Admin creates file 'servers.csv' containing only IP and shard name, one per line
+//Admin creates file 'servers.csv' containing only IP and shard name (or mock shard names if not using the sharding method), one per line
 //When executing, include the expected number of search results per page (eg: ./rt 12) so that a
 //divisible list of available servers is allocated to the core application by the tracker.
 //Tracker will check status of replica databases by attempting to connect to all listed every few seconds
 //Tracker will create a copy of this file called 'res.csv' and display only the confirmed online servers
-//as well as ID ranges divided across all online servers (accounting for deleted rows) so each has the same number of rows which 
-//serves just as reference info should you need to manually setup a group of shards the first time and balance everthing across them.
-//Once shard tables are setup and populated, the crawler will continue-round robin adding rows to them.
-//See the scaling section of the guide.
+//as well as ID ranges divided across all online servers (accounting for deleted rows) so each has the same number of rows.
 
 #include </usr/include/mysql/mysql.h>
 #include <stdlib.h>
