@@ -39,9 +39,12 @@ else
 		exit();
 	} 
 	
-	//fix phone users putting space at end
+	//phone users
 	if(strlen($query) > 1 && $query[strlen($query)-1]==" "){
 		$query = substr($query,0,strlen($query)-1);
+	}
+	if(strlen($query) > 1 && $query[0]==" "){
+		$query = substr($query,1,strlen($query));
 	}
 
 	//check if user wants to search a different search engine (!) or time window
