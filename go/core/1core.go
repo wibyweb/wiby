@@ -154,7 +154,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			query = query[:querylen-1]
 			queryNoQuotes = queryNoQuotes[:len(queryNoQuotes)-1]
 			querylen = len(query)
-		}	
+		}
+		if querylen > 1 && query[0] == ' '{
+			query = query[1:querylen]
+			queryNoQuotes = queryNoQuotes[1:len(queryNoQuotes)]
+			querylen = len(query)
+		}
 					
 		//check if user wants to limit search to a specific website
 		sitePos := -1
@@ -378,9 +383,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}else{
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}
+
+		/*sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN Match(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""*/
+
+
 		
 		rows, err := db.Query(sqlQuery)
-//		fmt.Printf("\n%s\n",sqlQuery)
+		//fmt.Printf("\n%s\n",sqlQuery)
 		if err != nil {
 			res.Page = strconv.Itoa(0)
 			res.Query = m["q"][0] //get original unsafe query

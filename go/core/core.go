@@ -159,6 +159,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			query = query[:querylen-1]
 			queryNoQuotes = queryNoQuotes[:len(queryNoQuotes)-1]
 			querylen = len(query)
+		}
+		if querylen > 1 && query[0] == ' '{
+			query = query[1:querylen]
+			queryNoQuotes = queryNoQuotes[1:len(queryNoQuotes)]
+			querylen = len(query)
 		}	
 					
 		//check if user wants to limit search to a specific website
@@ -1210,4 +1215,3 @@ func distributedQuery(con string, sqlQuery string, startID string, endID string,
 	//fmt.Printf("%s - %s\n", idList,con)
 	idListChan <- idList
 }
-
