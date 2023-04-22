@@ -44,7 +44,7 @@ pre { width:700px; white-space: pre-wrap; word-wrap: break-word; }
 Wiby is a search engine for the World Wide Web. The source code is now free as of July 8, 2022 under the GPLv2 license. I have been longing for this day! You can watch a quick demo <a href="https://youtu.be/nCfWJqNBqHo">here</a>.
 <br>
 <br>
-It includes a web interface allowing guardians to control where, how far, and how often it crawls websites and follows hyperlinks. The search index is stored inside of a MySQL full-text index.
+It includes a web interface allowing guardians to control where, how far, and how often it crawls websites and follows hyperlinks. The search index is stored inside of an InnoDB full-text index.
 <br>
 <br>
 Fast queries are maintained by concurrently searching different sections of the index across multiple replication servers or across duplicate server connections, returning a list of top results from each connection, 
@@ -470,7 +470,7 @@ The reverse proxy and replica servers can be connected through a VPN such as wir
 the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas.
 <br>
 <br>
-There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is more complicated and was developed after the first method as an experiment, where the crawler can store different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case. 
+There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is more complicated and was developed after the first method as an experiment, where the crawler can store different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case.
 <br>
 <br>
 To try out the sharding method, indicate the number of shards in the 'shards' file that the crawler references. Also set 'shards := true' on line 48 of the core application. You also have to initially balance out the shard tables, which is explained <a href="guide.html#balance">here</a>. This method offers a speed advantage for exact searches and less hard-drive storage across replicas if you use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>, but also requires the primary database and full replicas to use double the storage. 
@@ -594,7 +594,7 @@ FLUSH PRIVILEGES;
 </pre>
 <br>
 <a name="create"><b>Creating More Shard Tables</b></a>
-<br>
+<p class="pin">*Not needed for default scaling method</p>
 <br>
 There are four shard tables already in the database, but if you need more: 
 <br>
@@ -610,7 +610,7 @@ You will need to rebalance the shards, follow the steps below, then restart the 
 <br>
 <br>
 <a name="balance"><b>Balancing Additional Shards</b>
-<br>
+<p class="pin">*Not needed for default scaling method</p>
 <br>
 For now you would have to manually rebalance shards on first-time use. The most straight-forward way to rebalance them is to: 
 <br>
@@ -640,7 +640,7 @@ These changes will propagate down to the replicas, and the core application will
 <br>
 <br>
 <a name="accessshards"><b>Accessing Additional Shards</b></a>
-<br>
+<p class="pin">*Not needed for default scaling method</p>
 <br>
 Apply the account access permissions listed <a href="guide.html#replicaaccounts">here</a> for core app and rt access to each replica and <a href="guide.html#accounts">here</a> for crawler access to each new shard table on the primary server or replica hosting the core app. 
 <br>
@@ -656,6 +656,9 @@ Add the replica server's VPN address/port to upstream remote_core {} from the de
 <h3>Additional Notes</h3>
 The crawler stores a maximum of 80KB worth of text from the body of each webpage. To change this limit, edit the "body_len" definition from inside htmlparse.h and recompile the crawler. 
 This will affect the total size of the index and overall search speeds.
+<br>
+<br>
+The default scaling method does not use the 'main' index. You can drop that index ("DROP INDEX main ON windex;") if you need to free up hard drive space. Don't do that if you are using 1core or the shard scaling method.
 </p>
 </blockquote>
 </body>    
