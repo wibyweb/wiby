@@ -459,7 +459,7 @@ You can help ensure sub-second search queries as your index grows by building My
 If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also.
 <br>
 <br>
-The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement on line 396 and rebuild the core application.
+The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement on line 401 and rebuild the core application.
 <br>
 <br>
 The search results per page limit is 12, and must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
@@ -467,17 +467,17 @@ they do not divide evenly, those will remain in sync but will not be used for se
 <br>
 <br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
-the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas.
+the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas, or you can use these quick instructions <a href="guide.html#replica">here</a>.
 <br>
 <br>
-There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is more complicated and was developed after the first method as an experiment, where the crawler can store different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case.
+There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is more complicated and was developed after the first method as an experiment, where the crawler also stores different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case.
 <br>
 <br>
 To try out the sharding method, indicate the number of shards in the 'shards' file that the crawler references. Also set 'shards := true' on line 48 of the core application. You also have to initially balance out the shard tables, which is explained <a href="guide.html#balance">here</a>. This method offers a speed advantage for exact searches and less hard-drive storage across replicas if you use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>, but also requires the primary database and full replicas to use double the storage. 
 <br>
 <br>
 <br>
-<b>Instructions for Building a MySQL Replica:</b>
+<a name="replica"><b>Instructions for Building a MySQL Replica:</b></a>
 <br>
 <br>
 On the primary server add these lines to my.cnf under [mysqld] but only once you have a VPN to reach your replicas. Replace my.vpn.ip with your own, then restart MySQL.
@@ -495,7 +495,7 @@ create user 'slave_user'@'%' identified by 'd0gemuchw0w';
 GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%';
 FLUSH PRIVILEGES;
 </pre>
-On the replica server, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart MySQL:
+On the replica server, after installing MySQL, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart MySQL:
 <pre>
 [client]
 default-character-set=utf8mb4
