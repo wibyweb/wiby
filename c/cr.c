@@ -1538,8 +1538,8 @@ int main(int argc, char **argv)
 								}
 
 								if(isinternal==1 && ((crawl_type != 0 && crawl_type[0] != '2') || crawl_type == 0)){//is internal link
-									urls++;
 									if(url_fromlist[0]=='/' && url_fromlist[1] != '.'){//can't handle '..' otherwise append to insert
+										urls++;
 										if(urls>1){
 											strcat(url_insert,", (");
 										}
@@ -1573,6 +1573,7 @@ int main(int argc, char **argv)
 										}
 										strcat(url_insert,")");
 									}else if(url_fromlist[0] != '/' && url_fromlist[0] != '.'){
+										urls++;
 										if(urls>1){
 											strcat(url_insert,", (");
 										}
@@ -1612,8 +1613,8 @@ int main(int argc, char **argv)
 										strcat(url_insert,")");
 									}
 								}else if(isinternal==0 && crawl_type != 0 && crawl_type[0] != '0'){//is external link
-									urls++;
 									if(url_fromlist[0] != '.'){
+										urls++;
 										if(urls>1){
 											strcat(url_insert,", (");
 										}
