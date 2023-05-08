@@ -543,7 +543,7 @@ int canCrawl(int urlSize){
 				return 0;
 			prefixfound=1;
 		}
-		if(strURL[i]=='?' || strURL[i]=='\\'){
+		if(strURL[i]=='?' || strURL[i]=='\\' || strURL[i] == '"' || strURL[i] == '\''){
 			return 0;
 		}
 		if(strURL[i]=='.'){

@@ -1514,7 +1514,6 @@ int main(int argc, char **argv)
 					while(urlListShuffled[loopcount]!=0){
 						switch(urlListShuffled[loopcount]){
 							case '\n' ://see if url can be indexed, if so, add to sql insert statement
-
 								urlparse(url_fromlist);
 
 								//check if internal or external url
@@ -1540,10 +1539,10 @@ int main(int argc, char **argv)
 
 								if(isinternal==1 && ((crawl_type != 0 && crawl_type[0] != '2') || crawl_type == 0)){//is internal link
 									urls++;
-									if(urls>1){
-										strcat(url_insert,", (");
-									}
 									if(url_fromlist[0]=='/' && url_fromlist[1] != '.'){//can't handle '..' otherwise append to insert
+										if(urls>1){
+											strcat(url_insert,", (");
+										}
 										strcat(url_insert,"'");
 										strcat(url_insert,urlPrefix_finalURL);
 										strcat(url_insert,urlNPNP_finalURL);
@@ -1574,6 +1573,9 @@ int main(int argc, char **argv)
 										}
 										strcat(url_insert,")");
 									}else if(url_fromlist[0] != '/' && url_fromlist[0] != '.'){
+										if(urls>1){
+											strcat(url_insert,", (");
+										}
 										strcat(url_insert,"'");
 										if(isabsolute==0){
 											strcat(url_insert,urlPrefix_finalURL);
@@ -1611,37 +1613,39 @@ int main(int argc, char **argv)
 									}
 								}else if(isinternal==0 && crawl_type != 0 && crawl_type[0] != '0'){//is external link
 									urls++;
-									if(urls>1){
-										strcat(url_insert,", (");
-									}
-									strcat(url_insert,"'");
-									strcat(url_insert,rootdomain);
-									strcat(url_insert,urlPath);
-									strcat(url_insert,"',");
-									strcat(url_insert,worksafe);
-									strcat(url_insert,",'");
-									strcat(url_insert,approver);
-									strcat(url_insert,"',0,2,'");
-									if(task==0){
-										strcat(url_insert,url);
-									}else{
-										strcat(url_insert,crawl_tree);
-									}
-									strcat(url_insert,"','");
-									strcat(url_insert,finalURL);
-									strcat(url_insert,"',");
-									strcat(url_insert,strDepth);
-									strcat(url_insert,",");
-									strcat(url_insert,crawl_pages);
-									strcat(url_insert,",");
-									strcat(url_insert,crawl_type);
-									strcat(url_insert,",");
-									strcat(url_insert,"0");
-									if(id_assigned == 1){
+									if(url_fromlist[0] != '.'){
+										if(urls>1){
+											strcat(url_insert,", (");
+										}
+										strcat(url_insert,"'");
+										strcat(url_insert,rootdomain);
+										strcat(url_insert,urlPath);
+										strcat(url_insert,"',");
+										strcat(url_insert,worksafe);
+										strcat(url_insert,",'");
+										strcat(url_insert,approver);
+										strcat(url_insert,"',0,2,'");
+										if(task==0){
+											strcat(url_insert,url);
+										}else{
+											strcat(url_insert,crawl_tree);
+										}
+										strcat(url_insert,"','");
+										strcat(url_insert,finalURL);
+										strcat(url_insert,"',");
+										strcat(url_insert,strDepth);
 										strcat(url_insert,",");
-										strcat(url_insert,argv[1]);
-									}
-									strcat(url_insert,")");										
+										strcat(url_insert,crawl_pages);
+										strcat(url_insert,",");
+										strcat(url_insert,crawl_type);
+										strcat(url_insert,",");
+										strcat(url_insert,"0");
+										if(id_assigned == 1){
+											strcat(url_insert,",");
+											strcat(url_insert,argv[1]);
+										}
+										strcat(url_insert,")");	
+									}									
 								}
 
 								memset(url_fromlist,0,url_fromlist_arraylen);
