@@ -479,6 +479,15 @@ int main(int argc, char **argv)
 					urltoolong=1;
 					printf("\nURL is too long");
 				}
+				
+				int finalURLcount=0;
+				while(finalURL[finalURLcount]!=0){
+					if(finalURL[finalURLcount]=='\''){
+						urltoolong=1;//reusing this
+						printf("\nURL contains single-quote. Skipping.");
+					}
+					finalURLcount++;
+				}				
 
 				char finalURLnoprefix[finalURLsize-prefixsize+100];
 				char httpAllow[] = "0";
