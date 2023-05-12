@@ -438,7 +438,7 @@ int main(int argc, char **argv)
 				long size=0;
 				char *finalURL = NULL;
 				long response_code;	
-				int finalURLsize = 0,urltoolong=0;
+				int finalURLsize = 0,skipurl=0;
 				if (curl) {
 					fp = fopen(outfilename,"wb");
 					//Get file size
@@ -476,18 +476,18 @@ int main(int argc, char **argv)
 				}
 
 				if(finalURLsize>500){
-					urltoolong=1;
+					skipurl=1;
 					printf("\nURL is too long");
 				}
 				
 				int finalURLcount=0;
 				while(finalURL[finalURLcount]!=0){
 					if(finalURL[finalURLcount]=='\''){
-						urltoolong=1;//reusing this
+						skipurl=1;
 						printf("\nURL contains single-quote. Skipping.");
 					}
 					finalURLcount++;
-				}				
+				}
 
 				char finalURLnoprefix[finalURLsize-prefixsize+100];
 				char httpAllow[] = "0";
@@ -495,7 +495,7 @@ int main(int argc, char **argv)
 				int updatereserve=0;
 				char idReserve[100];
 
-				if(urltoolong==0){
+				if(skipurl==0){
 					//see if server permitted an http connection 
 					if(finalURL != NULL){
 						if(finalURL[4]==':')
@@ -677,7 +677,7 @@ int main(int argc, char **argv)
 					}
 				}
 				//=====================Extract text from HTML file=======================
-				if(size < 5000000 && urltoolong==0 && alreadydone==0)
+				if(size < 5000000 && skipurl==0 && alreadydone==0)
 				{
 					//switch on/off hyperlink collecting (if refresh is from link crawler, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set)
 					if((task != 0 && task[0]=='2' && (n_crawl_depth > 0 || n_crawl_depth < 0) && (n_crawl_pages > 0 || n_crawl_pages < 0)) || (task==0 && (n_crawl_depth > 0 || n_crawl_depth < 0)  && (n_crawl_pages > 0 || n_crawl_pages < 0)) || (task != 0 && task[0]=='1' && crawl_repeat != 0 && crawl_repeat[0]=='1' && (n_crawl_pages > 0 || n_crawl_pages < 0))){
@@ -1748,4 +1748,3 @@ int main(int argc, char **argv)
 	}
 	exit(0);
 }
-
