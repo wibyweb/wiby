@@ -5,7 +5,7 @@
 //char url[] = "index.htm\0";
 char urlcopy[1000];
 char domain[1000];
-char tldlist[] = "co.uk,co.jp\0";
+char tldlist[] = "co.uk,org.uk,co.jp\0";
 char buffer[1000];
 char rootdomain[1000];
 char urlPath[1000];
