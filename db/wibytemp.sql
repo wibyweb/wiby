@@ -26,6 +26,7 @@ CREATE TABLE `rejected` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `user` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  `type` int(11) DEFAULT NULL,
   `date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
@@ -49,6 +50,7 @@ DROP TABLE IF EXISTS `reserve_id`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reserve_id` (
   `id` bigint(20) NOT NULL,
+  `crawler_id` int(11) DEFAULT NULL,
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
@@ -96,4 +98,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-02-21  0:06:27
+-- Dump completed on 2023-05-23  9:34:09
