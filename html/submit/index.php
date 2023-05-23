@@ -4,7 +4,7 @@
 	{    
 	  include 'form.html.php';    
 	}
-	else if($_POST['url'] == '' || strpos("x".$_POST['url'],'.') == false || strpos("x".$_POST['url'],' ') == true)
+	else if($_POST['url'] == '' || strpos("x".$_POST['url'],'.') == false || strpos(trim("x".$_POST['url']),' ') == true)
 	{
 	  echo "It doesn't look like you submitted a valid URL.";
 	  include 'form.html.php';
@@ -50,8 +50,11 @@
 		  exit(); 
 		}
  
-	    $url = mysqli_real_escape_string($link, $_POST['url']);
-	    $url = str_replace("''", "%27", $url); 
+		$url = mysqli_real_escape_string($link, $_POST['url']);
+		$url = str_replace("''", "%27", $url);
+		$url = str_replace(":443", "", $url);
+		$url = trim($url);
+
 		//$url = str_replace("\"", "\"\"", $url); //not needed if using single quotes for query
 		$url = substr($url,0,400); //don't allow user to post a longer url than 400b (also limited in form)
 		$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
