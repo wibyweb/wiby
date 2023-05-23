@@ -16,7 +16,7 @@
 #define url_fromlist_arraylen 102400
 #define url_insert_arraylen 1024000
 
-char /**title, *keywords, *description, *page,*/ *windexinsert, *windexupdate, *windexRandUpdate, *titlecheckinsert, /**shardinsert,*/ urlPath_finalURL[1001], folderPath_finalURL[1001], urlPrefix_finalURL[1001], urlNPNP_finalURL[1001], strDepth[101], url_fromlist[url_fromlist_arraylen], url_insert[url_insert_arraylen], previousfail[5][1001];
+char /**title, *keywords, *description, *page,*/ *windexinsert, *windexupdate, *windexRandUpdate, *titlecheckinsert, /**shardinsert,*/ correctedURL[1001], urlPath_finalURL[1001], folderPath_finalURL[1001], urlPrefix_finalURL[1001], urlNPNP_finalURL[1001], strDepth[101], url_fromlist[url_fromlist_arraylen], url_insert[url_insert_arraylen], previousfail[5][1001];
 
 FILE *shardfile;
 char *shardfilestr;
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	if(argc == 2 && isnum(argv[1])==1){
 		id_assigned=1;
 	}else if(argc >= 2){
-		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlink to the 'robots' folder in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 0.\n\n");
+		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlinks to the 'robots' folder and 'shards' file in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 0.\n\n");
 		exit(0);	
 	}
 
@@ -285,10 +285,10 @@ int main(int argc, char **argv)
 			//printf("\nurlnoprefix: %s\n",urlnoprefix);
 
 			printf("Checking if page already exists in index... ");	
-			int idexistsalready = 0;
+			int idexistsalready = 0, checkurlsize = urlnoprefixcount*24+1000;
 			char *idexistsvalue;
-			char checkurl[urlnoprefixcount*24+1000];
-			memset(checkurl,0,urlnoprefixcount*24+1000);
+			char checkurl[checkurlsize];
+			memset(checkurl,0,checkurlsize);
 			if(task == 0 || task[0] == '2'){//index request did not come from refresh scheduler, or is an autocrawl url
 				//strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url = 'http://"); //replace this with a simple check for url_noprefix column match
 				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url_noprefix = '"); 
@@ -401,7 +401,8 @@ int main(int argc, char **argv)
 			if(previousID[0] != -1 && alreadydone==0 && failedcrawl==0){
 				if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
 					sanity = 0;
-					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check duplicates.txt");
+					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
+					exit(0);
 				}else{
 					sanity = 1;
 				}
@@ -480,6 +481,26 @@ int main(int argc, char **argv)
 					printf("\nURL is too long");
 				}
 				
+				//if effective URL contains ':443', CURL will fail to download this page on next update. Remove :443 from finalURL.
+				char *ptr_substring = NULL;
+				int substringpos=0;
+				if(finalURLsize > 3)
+					ptr_substring = strstr(finalURL,":443");
+				if(ptr_substring != NULL && skipurl == 0){
+					substringpos = ptr_substring - finalURL;
+					int poscount = substringpos;
+					memcpy(correctedURL,finalURL,substringpos);//copy before substring
+					while(1){//copy after substring
+						correctedURL[poscount] = finalURL[poscount+4];
+						if(finalURL[poscount+4] == 0)
+							break;
+						poscount++;
+					}
+					finalURL = correctedURL;
+					finalURLsize = strlen(finalURL);
+					printf("\nSetting final URL as: %s\n", finalURL);
+				}
+
 				int finalURLcount=0;
 				while(finalURL[finalURLcount]!=0){
 					if(finalURL[finalURLcount]=='\''){
@@ -493,7 +514,7 @@ int main(int argc, char **argv)
 				char httpAllow[] = "0";
 				memset(finalURLnoprefix,0,finalURLsize-prefixsize+100);
 				int updatereserve=0;
-				char idReserve[100];
+				char idReserve[200];
 
 				if(skipurl==0){
 					//see if server permitted an http connection 
@@ -560,7 +581,7 @@ int main(int argc, char **argv)
 						row = mysql_fetch_row(resulturlcheck);					
 						if(row != NULL)
 						{
-							printf("\nDoublechecked effective URL in windex, found ID %s",row[0]);
+							printf("\nDoublechecked effective URL in windex, found ID %s\n",row[0]);
 							idexistsalready = 1;
 							idexistsvalue = row[0];
 							previousID[0] = atoi(row[0]);
@@ -585,7 +606,7 @@ int main(int argc, char **argv)
 						//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
 						if(previousID[0] != -1){
 							if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
-								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check duplicates.txt");
+								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
 								exit(0);
 							}
 						}
@@ -597,14 +618,19 @@ int main(int argc, char **argv)
 						{
 							finish_with_error(con);
 						}
-						memset(idReserve,0,100);
-						strcpy(idReserve,"INSERT into reserve_id (id) VALUES (");
+						memset(idReserve,0,200);
+						strcpy(idReserve,"INSERT into reserve_id (id, crawler_id) VALUES (");
 						strcat(idReserve,idexistsvalue);
+						strcat(idReserve,",");
+						strcat(idReserve,argv[1]);
 						strcat(idReserve,");");
 						if(mysql_query(con, idReserve)) 
 						{
-							printf("\nID is already reserved, will try again later. Clearing old reservations...");
-							if(mysql_query(con, "DELETE FROM reserve_id WHERE time < NOW() - INTERVAL 10 MINUTE")){
+							printf("\nID is already reserved, will try again. Clearing old reservations...");
+							memset(idReserve,0,200);
+							strcpy(idReserve,"DELETE FROM reserve_id WHERE time < NOW() - INTERVAL 10 MINUTE OR crawler_id = ");
+							strcat(idReserve,argv[1]);
+							if(mysql_query(con, idReserve)){
 								finish_with_error(con);
 							}else{
 								printf(" Done.");							
@@ -617,62 +643,61 @@ int main(int argc, char **argv)
 							finish_with_error(con);
 						}
 						updatereserve=1;
-						if(alreadydone==0){
-							//check that the url being updated is still assigned to that ID 
-							memset(checkurl,0,urlnoprefixcount*24+1000);
-							if(task != 0 && task[0] == '1'){
-								strcpy(checkurl,"SELECT id FROM windex WHERE url = '");
-								strcat(checkurl,url);
-								strcat(checkurl,"';");
-							}else{
-								if(foundindoublecheck==0){
-									strcpy(checkurl,"SELECT id FROM windex WHERE url_noprefix = '");
-									if(slashfound==0)
-									{
-										strcat(checkurl,urlnoprefix);
-										strcat(checkurl,"' OR url_noprefix = '");
-										strcat(checkurl,urlnoprefix);strcat(checkurl,"/");
-										strcat(checkurl,"' OR url_noprefix = '");
-										strcat(checkurl,urlnoprefix);strcat(checkurl,"/index.html");
-										strcat(checkurl,"' OR url_noprefix = '/index.htm");
-										strcat(checkurl,"';");
-									}else{
-										strcat(checkurl,urlnoprefix);
-										strcat(checkurl,"' OR url_noprefix = '");
-										strcat(checkurl,urlnoprefixnoslash);
-										strcat(checkurl,"' OR url_noprefix = '");
-										strcat(checkurl,urlnoprefix);strcat(checkurl,"index.html");
-										strcat(checkurl,"' OR url_noprefix = '");
-										strcat(checkurl,urlnoprefix);strcat(checkurl,"index.htm");
-										strcat(checkurl,"';");
-									}
+
+						//check that the url being updated is still assigned to that ID 
+						memset(checkurl,0,checkurlsize);
+						if(task != 0 && task[0] == '1'){
+							strcpy(checkurl,"SELECT id FROM windex WHERE url = '");
+							strcat(checkurl,url);
+							strcat(checkurl,"';");
+						}else{
+							if(foundindoublecheck==0){
+								strcpy(checkurl,"SELECT id FROM windex WHERE url_noprefix = '");
+								if(slashfound==0)
+								{
+									strcat(checkurl,urlnoprefix);
+									strcat(checkurl,"' OR url_noprefix = '");
+									strcat(checkurl,urlnoprefix);strcat(checkurl,"/");
+									strcat(checkurl,"' OR url_noprefix = '");
+									strcat(checkurl,urlnoprefix);strcat(checkurl,"/index.html");
+									strcat(checkurl,"' OR url_noprefix = '/index.htm");
+									strcat(checkurl,"';");
 								}else{
-									strcpy(checkurl,"SELECT id FROM windex WHERE url = '");
-									strcat(checkurl,finalURL);
+									strcat(checkurl,urlnoprefix);
+									strcat(checkurl,"' OR url_noprefix = '");
+									strcat(checkurl,urlnoprefixnoslash);
+									strcat(checkurl,"' OR url_noprefix = '");
+									strcat(checkurl,urlnoprefix);strcat(checkurl,"index.html");
+									strcat(checkurl,"' OR url_noprefix = '");
+									strcat(checkurl,urlnoprefix);strcat(checkurl,"index.htm");
 									strcat(checkurl,"';");
 								}
+							}else{
+								strcpy(checkurl,"SELECT id FROM windex WHERE url = '");
+								strcat(checkurl,finalURL);
+								strcat(checkurl,"';");
 							}
-							//query db
-							if (mysql_query(con, checkurl)) 
-							{
-								finish_with_error(con);
-							}
-							MYSQL_RES *resulturlcheck = mysql_store_result(con);
-							if(resulturlcheck == NULL)
-							{
-								finish_with_error(con);
-							}
-							//grab the first entry (fifo)
-							char *URLcheckID;
-							MYSQL_ROW rowURLCheck = mysql_fetch_row(resulturlcheck);
-							if(rowURLCheck != NULL)
-							{						
-								URLcheckID = rowURLCheck[0];
-							}
-							if(URLcheckID != 0 && atoi(URLcheckID) != atoi(idexistsvalue)){
-								printf("\nID was already reserved, will try again later.");
-								alreadydone=1;
-							}
+						}
+						//query db
+						if (mysql_query(con, checkurl)) 
+						{
+							finish_with_error(con);
+						}
+						MYSQL_RES *resulturlcheck = mysql_store_result(con);
+						if(resulturlcheck == NULL)
+						{
+							finish_with_error(con);
+						}
+						//grab the first entry (fifo)
+						char *URLcheckID;
+						MYSQL_ROW rowURLCheck = mysql_fetch_row(resulturlcheck);
+						if(rowURLCheck != NULL)
+						{						
+							URLcheckID = rowURLCheck[0];
+						}
+						if(URLcheckID != 0 && atoi(URLcheckID) != atoi(idexistsvalue)){
+							printf("\nID was already reserved, will try again later.");
+							alreadydone=1;
 						}
 					}
 				}
@@ -1357,7 +1382,7 @@ int main(int argc, char **argv)
 							{
 								finish_with_error(con);
 							}
-							memset(idReserve,0,100);
+							memset(idReserve,0,200);
 							strcpy(idReserve,"DELETE FROM reserve_id where id = ");
 							strcat(idReserve,idexistsvalue);
 							strcat(idReserve,";");
