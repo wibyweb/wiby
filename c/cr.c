@@ -169,16 +169,17 @@ int main(int argc, char **argv)
 		if(row == NULL){
 			//printf("\nQueue is empty\n");
 			empty=1;
-		}
-		else
-		{
+		}else{
 			//convert shardnum to string
 			if(nShards > 0){
 				sprintf(shardnumstr,"%d",shardnum);
 				//itoa(shardnum,shardnumstr,10);
 			}
-
-			printf("-----------------------------------------------------------------------------------\nFetching:");
+			if(id_assigned == 0){
+				printf("-----------------------------------------------------------------------------------\nFetching:");
+			}else{
+				printf("-----------------------------------------------------------------------------------\ncr%s Fetching:",argv[1]);
+			}
 			//grab the first entry (fifo)
 			/*for(int i=0; i<num_fields; i++)
 			  {
@@ -353,8 +354,7 @@ int main(int argc, char **argv)
 			{
 				printf("null");
 				previousID[0] = -1;
-			}
-			else {
+			}else {
 				printf("%s",row[0]);
 				idexistsalready = 1;
 				idexistsvalue = row[0];
@@ -419,8 +419,7 @@ int main(int argc, char **argv)
 			strcpy(urlHTTP,"http");				
 			if(http > 0 || https > 0){
 				strcat(urlHTTP,"://");
-			}
-			else if(httpwww > 0 || httpswww > 0){
+			}else if(httpwww > 0 || httpswww > 0){
 				strcat(urlHTTP,"://www.");
 			}			
 			strcat(urlHTTP,urlnoprefix);
@@ -683,14 +682,14 @@ int main(int argc, char **argv)
 						{
 							finish_with_error(con);
 						}
-						MYSQL_RES *resulturlcheck = mysql_store_result(con);
+						MYSQL_RES *resulturlreservecheck = mysql_store_result(con);
 						if(resulturlcheck == NULL)
 						{
 							finish_with_error(con);
 						}
 						//grab the first entry (fifo)
 						char *URLcheckID;
-						MYSQL_ROW rowURLCheck = mysql_fetch_row(resulturlcheck);
+						MYSQL_ROW rowURLCheck = mysql_fetch_row(resulturlreservecheck);
 						if(rowURLCheck != NULL)
 						{						
 							URLcheckID = rowURLCheck[0];
@@ -699,6 +698,7 @@ int main(int argc, char **argv)
 							printf("\nID was already reserved, will try again later.");
 							alreadydone=1;
 						}
+						mysql_free_result(resulturlreservecheck);
 					}
 				}
 				//=====================Extract text from HTML file=======================
@@ -1416,9 +1416,7 @@ int main(int argc, char **argv)
 					}
 					//clear page from memory
 					free(windexinsert); free(windexupdate); free(titlecheckinsert); free(windexRandUpdate); //free(shardinsert);
-				}
-				else 
-				{
+				}else{
 					skip = 1;
 				}
 
@@ -1752,6 +1750,7 @@ int main(int argc, char **argv)
 				fputs ("\r\n",abandoned);
 				fclose(abandoned);
 			}
+
 			//cleanup more sql stuff
 			mysql_free_result(resulturlcheck);
 
