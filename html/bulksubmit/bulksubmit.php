@@ -43,7 +43,8 @@
 	
 	$urls = $_POST['urls'];
 	$urls = mysqli_real_escape_string($link, $_POST['urls']);
-	$urls = str_replace("''", "%27", $urls);	
+	$urls = str_replace("''", "%27", $urls);
+	$urls = str_replace(":443", "", $urls);			
 	$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
 	//$worksafe = str_replace("\"", "\"\"", $worksafe);	
 	if($worksafe == 'on')
@@ -61,48 +62,31 @@
 		$url="";
 		$gotfirsturl=false;
 		$sql = "INSERT INTO reviewqueue (url,worksafe) VALUES ";
-		$gotURL=false;
 		$urls=str_replace("\r","",$urls);
+		$urls= $urls . "\n";
 		$lenURLs=strlen($urls);
 		while ($i < $lenURLs){
 			if($urls[$i]!="\n"){
 				$url = $url . $urls[$i];
 			}else if($url != ''){
-				$url = substr($url,0,400); //don't allow user to post a longer url than 400b (also limited in form)			
+				$url = substr($url,0,400); //don't allow user to post a longer url than 400b 	
 				$url = str_replace("/index.html", "/", $url);
-				$url = str_replace("/index.htm", "/", $url);
-			if(strpos($url,'.') == false || strpos($url,' ') == true){
-				echo "It doesn't look like you submitted a valid URL: '". $url ."'";
-				include 'form.html.php';
-				exit();					
-			}				
+				$url = str_replace("/index.htm", "/", $url);			
+				if(strpos($url,'.') == false || strpos($url,' ') == true){
+					echo "It doesn't look like you submitted a valid URL: '". $url ."'";
+					include 'form.html.php';
+					exit();					
+				}				
 				//add to SQL statement
 				if($gotfirsturl==false){
-					$sql= $sql . "('".$url."','".$worksafe."')";
+					$sql = $sql . "('".$url."','".$worksafe."')";
 					$gotfirsturl=true;
 				}else{
-					$sql= $sql . ",('".$url."','".$worksafe."')";
+					$sql = $sql . ",('".$url."','".$worksafe."')";
 				}
 				$url='';
 			}
 			$i++;
-		}
-		if($url!=''){
-			$url = substr($url,0,400); //don't allow user to post a longer url than 400b (also limited in form)			
-			$url = str_replace("/index.html", "/", $url);
-			$url = str_replace("/index.htm", "/", $url);
-			if(strpos($url,'.') == false || strpos($url,' ') == true){
-				echo "It doesn't look like you submitted a valid URL: '". $url ."'";
-				include 'form.html.php';
-				exit();					
-			}			
-			//add to SQL statement
-			if($gotfirsturl==false){
-				$sql = $sql . "('".$url."','".$worksafe."')";
-				$gotfirsturl=true;
-			}else{
-				$sql = $sql . ",('".$url."','".$worksafe."')";
-			}			
 		}
 		if (!mysqli_query($link, $sql))   
 		{
