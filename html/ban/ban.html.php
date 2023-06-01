@@ -4,7 +4,7 @@
 
   <head>    
 
-    <title>Form Example</title>    
+    <title>Result</title>    
 
     <meta http-equiv="content-type"    
 
@@ -15,11 +15,11 @@
   <body>    
 
     <p>    
-
-      <?php echo $output; ?>    
+      Completed.<br><br>
+      <?php echo $output; ?>
 
     </p>    
-
+	<a href="ban.php">Return</a>
   </body>    
 
 </html>
