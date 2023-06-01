@@ -245,6 +245,7 @@ grant delete on titlecheck to 'crawler'@'localhost';
 grant select on rejected to 'approver'@'localhost';
 grant insert on rejected to 'approver'@'localhost';
 grant delete on rejected to 'approver'@'localhost';
+grant insert on rejected to 'crawler'@'localhost';
 grant select on reserve_id to 'crawler'@'localhost';
 grant insert on reserve_id to 'crawler'@'localhost';
 grant delete on reserve_id to 'crawler'@'localhost';
@@ -412,7 +413,7 @@ The options listed below control how the crawler indexes hyperlinks on the websi
 <br>
 <br>
 <h3>/ban/</h3>
-You can delete or ban individual URL's from the index with this form. Its pretty simple as I don't use it much. You can't delete an entire domain with it, for that you can build your own query in the MySQL console.
+Delete or ban a list of URLs from the index with this form. You can't delete an entire domain with it, for that you can build your own query in the MySQL console.
 <br>
 <br>
 <h3>/bulksubmit/</h3>
