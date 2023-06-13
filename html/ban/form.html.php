@@ -15,7 +15,7 @@
   <body>    
     <form action="ban.php" method="post"> 
       <div>
-        <label for="url">URLs as they appear in search results:</label><br> 
+        <label for="url">List up to 100 URLs as they appear in search results:</label><br> 
 		<?php if(isset($_POST['urls'])) : ?>
 				<textarea id="urls" name="urls" maxlength="40000" rows="10" cols="60" ><?php echo htmlspecialchars($_POST['urls'], ENT_QUOTES, 'UTF-8') ?></textarea>
 		<?php else : ?>
