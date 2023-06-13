@@ -509,6 +509,18 @@ int main(int argc, char **argv)
 					finalURLcount++;
 				}
 
+				//this check is done again incase there is a redirect to a link containing parameters when crawling through hyperlinks
+				if(task != 0 && task[0]=='2'){
+					finalURLcount=0;
+					while(finalURL[finalURLcount]!=0){
+						if(finalURL[finalURLcount]=='?'){
+							skipurl=1;
+							printf("\nURL contains parameters. Skipping.");
+						}
+						finalURLcount++;
+					}
+				}
+
 				char finalURLnoprefix[finalURLsize-prefixsize+100];
 				char httpAllow[] = "0";
 				memset(finalURLnoprefix,0,finalURLsize-prefixsize+100);
@@ -704,7 +716,7 @@ int main(int argc, char **argv)
 				//=====================Extract text from HTML file=======================
 				if(size < 5000000 && skipurl==0 && alreadydone==0)
 				{
-					//switch on/off hyperlink collecting (if refresh is from link crawler, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set)
+					//switch on/off hyperlink collecting (if crawling through hyperlinks, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set)
 					if((task != 0 && task[0]=='2' && (n_crawl_depth > 0 || n_crawl_depth < 0) && (n_crawl_pages > 0 || n_crawl_pages < 0)) || (task==0 && (n_crawl_depth > 0 || n_crawl_depth < 0)  && (n_crawl_pages > 0 || n_crawl_pages < 0)) || (task != 0 && task[0]=='1' && crawl_repeat != 0 && crawl_repeat[0]=='1' && (n_crawl_pages > 0 || n_crawl_pages < 0))){
 						getURLs=1;
 					}else{
@@ -1515,11 +1527,10 @@ int main(int argc, char **argv)
 						}
 					}
 
-					//check if link crawling is specified
-					//make sure duplicates don't get crawled more than once
-					//check db if its already indexed too - do this at beginning instead?
-
-					//crawl links if refresh is from link crawler, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set
+				//check if link crawling is specified
+				//make sure duplicates don't get crawled more than once
+				//check db if its already indexed too - do this at beginning instead?
+				//crawl links if crawling through hyperlinks, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set
 				}else if(nofollow==0 && getURLs==1 && alreadydone==0){
 					//cycle through url list, then construct an sql string around it, then insert it to indexqueue;	
 
@@ -1539,9 +1550,9 @@ int main(int argc, char **argv)
 					memset(url_insert,0,url_insert_arraylen);
 					int loopcount=0,elementnum=0,urls=0;
 					if(id_assigned == 1){
-						strcpy(url_insert,"INSERT INTO indexqueue (url,worksafe,approver,surprise,task,crawl_tree,crawl_family,crawl_depth,crawl_pages,crawl_type,crawl_repeat,crawler_id) VALUES (");
+						strcpy(url_insert,"INSERT INTO indexqueue (url,worksafe,approver,surprise,task,crawl_tree,crawl_family,crawl_depth,crawl_pages,crawl_type,crawl_repeat,force_rules,crawler_id) VALUES (");
 					}else{
-						strcpy(url_insert,"INSERT INTO indexqueue (url,worksafe,approver,surprise,task,crawl_tree,crawl_family,crawl_depth,crawl_pages,crawl_type,crawl_repeat) VALUES (");
+						strcpy(url_insert,"INSERT INTO indexqueue (url,worksafe,approver,surprise,task,crawl_tree,crawl_family,crawl_depth,crawl_pages,crawl_type,crawl_repeat,force_rules) VALUES (");
 					}
 					while(urlListShuffled[loopcount]!=0){
 						switch(urlListShuffled[loopcount]){
@@ -1599,6 +1610,8 @@ int main(int argc, char **argv)
 										strcat(url_insert,crawl_type);
 										strcat(url_insert,",");
 										strcat(url_insert,"0");
+										strcat(url_insert,",");
+										strcat(url_insert,force_rules);
 										if(id_assigned == 1){
 											strcat(url_insert,",");
 											strcat(url_insert,argv[1]);
@@ -1638,6 +1651,8 @@ int main(int argc, char **argv)
 										strcat(url_insert,crawl_type);
 										strcat(url_insert,",");
 										strcat(url_insert,"0");
+										strcat(url_insert,",");
+										strcat(url_insert,force_rules);
 										if(id_assigned == 1){
 											strcat(url_insert,",");
 											strcat(url_insert,argv[1]);
@@ -1651,6 +1666,7 @@ int main(int argc, char **argv)
 											strcat(url_insert,", (");
 										}
 										strcat(url_insert,"'");
+										strcat(url_insert,prefix_fromlist);
 										strcat(url_insert,rootdomain);
 										strcat(url_insert,urlPath);
 										strcat(url_insert,"',");
@@ -1673,6 +1689,8 @@ int main(int argc, char **argv)
 										strcat(url_insert,crawl_type);
 										strcat(url_insert,",");
 										strcat(url_insert,"0");
+										strcat(url_insert,",");
+										strcat(url_insert,force_rules);
 										if(id_assigned == 1){
 											strcat(url_insert,",");
 											strcat(url_insert,argv[1]);
