@@ -45,6 +45,10 @@ int main(int argc, char **argv)
 {
 	int id_assigned=0;
 	if(argc == 2 && isnum(argv[1])==1){
+		if(argv[1][0] == 48){
+			printf("When assigning ID's, you must start at 1. Cannot set an id of 0.\n");
+			exit(0);
+		}		
 		id_assigned=1;
 	}else if(argc >= 2){
 		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlinks to the 'robots' folder and 'shards' file in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 0.\n\n");
