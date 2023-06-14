@@ -44,7 +44,7 @@ void htmlparse(){
 	numURL=0;
 	int intag=0,incomment=0,inscript=0,instyle=0,inlink=0,putspace=0,spacecount=0;
 	int urlSize=0,dqcount=0;
-	titlefound=charsetfound=descriptionfound=keywordsfound=robotsfound=nofollow=noindex=scriptfound=stylefound=0;
+	titlefound=charsetfound=descriptionfound=keywordsfound=robotsfound=nofollow=noindex=scriptfound=stylefound=num_stylesheets=num_scripts=0;
 	charsetsize=titlesize=keywordssize=descriptionsize=robotssize=bodysize=0;
 
 	memset(window,'#',window_len);
