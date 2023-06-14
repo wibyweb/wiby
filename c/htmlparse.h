@@ -218,15 +218,16 @@ void htmlparse(){
 				incomment = 0;
 			}
 							
-			if(locateInWindow(window,"<script","<SCRIPT",7)==1){
+			if(locateInWindow(window,"<script","<SCRIPT",7)==1 && c != ' ' && skipchar == 0){
 				inscript = 1;
 				num_scripts++;
 			}else if(locateInWindow(window,"</script>","</SCRIPT>",9)==1){
 				inscript = 0;
 			}
 			
-			if(locateInWindow(window,"<style","<STYLE",6)==1){
+			if(locateInWindow(window,"<style","<STYLE",6)==1 && c != ' ' && skipchar == 0){
 				instyle = 1;
+				num_stylesheets++;
 			}else if(locateInWindow(window,"</style>","</STYLE>",8)==1){
 				instyle = 0;
 			}
@@ -237,7 +238,7 @@ void htmlparse(){
 				inlink = 0;
 			}
 			if(inlink==1){
- 				if(locateInWindow(window,".css",".CSS",4)==1)
+ 				if(locateInWindow(window,".css",".CSS",4)==1 && c != ' ' && skipchar == 0)
  					num_stylesheets++;
 			}
 
@@ -568,7 +569,7 @@ int canCrawl(int urlSize){
 	}
 
 	//restrict file extensions to these
-	if(extfound==1 && (locateInURL(strURL,".html",".HTML",5,urlSize)==1 || locateInURL(strURL,".htm",".HTM",4,urlSize)==1 || locateInURL(strURL,".txt",".TXT",4,urlSize)==1 || locateInURL(strURL,".php",".PHP",4,urlSize)==1 || locateInURL(strURL,".asp",".ASP",4,urlSize)==1)){
+	if(extfound==1 && (locateInURL(strURL,".html",".HTML",5,urlSize)==1 || locateInURL(strURL,".htm",".HTM",4,urlSize)==1 || locateInURL(strURL,".txt",".TXT",4,urlSize)==1 || locateInURL(strURL,".php",".PHP",4,urlSize)==1 || locateInURL(strURL,".asp",".ASP",4,urlSize)==1 || locateInURL(strURL,".xhtml",".XHTML",6,urlSize)==1)){
 		return 1;
 	}	
 	if(extfound==0 )
