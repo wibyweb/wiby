@@ -745,9 +745,10 @@ int main(int argc, char **argv)
 
 				//check if rules are enforced (only for pages that are autocrawled)
 				if(force_rules != 0 && force_rules[0]=='1' && task != 0 && task[0]=='2' && noindex == 0){
-					if(num_scripts > 2 || num_stylesheets > 1)
+					if(num_scripts > 2 || num_stylesheets > 2){
 						noindex = 1;
-					printf("\nFailed rule check");
+						printf("\nFailed rule check");
+					}
 				}
 
 				int skip = 0, titlechanged = 0, escape = 0, escapetotal = 0, redirected = 0;
