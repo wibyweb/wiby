@@ -28,7 +28,7 @@ CREATE TABLE `failed` (
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FULLTEXT KEY `url_noprefix` (`url_noprefix`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -37,7 +37,6 @@ CREATE TABLE `failed` (
 
 LOCK TABLES `failed` WRITE;
 /*!40000 ALTER TABLE `failed` DISABLE KEYS */;
-INSERT INTO `failed` VALUES (1,'amazon.com/','2023-06-18 23:05:18');
 /*!40000 ALTER TABLE `failed` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -125,4 +124,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-06-18 23:22:35
+-- Dump completed on 2023-06-18 23:46:37
