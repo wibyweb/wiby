@@ -249,6 +249,9 @@ grant insert on rejected to 'crawler'@'localhost';
 grant select on reserve_id to 'crawler'@'localhost';
 grant insert on reserve_id to 'crawler'@'localhost';
 grant delete on reserve_id to 'crawler'@'localhost';
+grant select on failed to 'crawler'@'localhost';
+grant insert on failed to 'crawler'@'localhost';
+grant delete on failed to 'crawler'@'localhost';
 FLUSH PRIVILEGES;
 </pre>
 <h3>Copy the HTML files and PHP scripts to your web server</h3>
