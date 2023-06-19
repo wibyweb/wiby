@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 		if(argv[1][0] == 48){
 			printf("When assigning ID's, you must start at 1. Cannot set an id of 0.\n");
 			exit(0);
-		}		
+		}
 		id_assigned=1;
 	}else if(argc >= 2){
 		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlinks to the 'robots' folder and 'shards' file in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 0.\n\n");
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 				n_crawl_pages = atoi(crawl_pages);
 			}
 
-			printf("\nURL: %s\nID: %s | Worksafe: %s | Surprise: %s | Approver: %s | Updatable: %s | task: %s\n", url, id, worksafe, surprise, approver, updatable, task);
+			printf("\nURL: %s\nID: %s | Worksafe: %s | Surprise: %s | Approver: %s | Updatable: %s | Task: %s\n", url, id, worksafe, surprise, approver, updatable, task);
 			printf("Tree: %s | Family: %s | Depth: %s | Pages: %s | Type: %s | Repeat: %s | Rules: %s\n",crawl_tree,crawl_family,crawl_depth,crawl_pages,crawl_type,crawl_repeat,force_rules);
 			//===================check if url already indexed,  ====================
 
@@ -386,10 +386,25 @@ int main(int argc, char **argv)
 			urlparse(url);
 			permitted = checkrobots(prefix,rootdomain,urlPath);
 
+			//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
+			if(previousID[0] != -1 && alreadydone==0){
+				if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
+					sanity = 0;
+					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
+					exit(0);
+				}else{
+					sanity = 1;
+				}
+
+			}else{
+				sanity = 1;
+			}
+
 			int failedcrawl=0;
 			if(task != 0 && task[0]=='2' && alreadydone==0 && permitted==1){
 				//see if url failed to crawl last time (when link crawling)
 				//as it might come up multiple times during crawl of website, should avoid recrawling it
+				//will also check the database if this check passes
 				for(int i=0;i<5;i++){
 					if(strcasecmp(previousfail[i], urlnoprefix)==0){
 						sanity=0;
@@ -401,18 +416,57 @@ int main(int argc, char **argv)
 					sleep(1);//do link crawling slowly
 			}
 
-			//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
-			if(previousID[0] != -1 && alreadydone==0 && failedcrawl==0){
-				if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
-					sanity = 0;
-					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
-					exit(0);
-				}else{
-					sanity = 1;
+			//if crawling through hyperlinks, doublecheck that the URL did not fail being crawled over the last 12 hours  
+			int alreadylogged = 0;
+			if(failedcrawl==0 && task !=0 && task[0]=='2'){
+				if (mysql_query(con, "use wibytemp")) 
+				{
+					finish_with_error(con);
 				}
-
-			}else{
-				sanity = 1;
+				memset(checkurl,0,checkurlsize);
+				strcpy(checkurl,"SELECT id FROM failed WHERE url_noprefix = '");
+				if(slashfound==0)
+				{
+					strcat(checkurl,urlnoprefix);
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '");
+					strcat(checkurl,urlnoprefix);strcat(checkurl,"/");
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '");
+					strcat(checkurl,urlnoprefix);strcat(checkurl,"/index.html");
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '/index.htm");
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR");
+				}else{
+					strcat(checkurl,urlnoprefix);
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '");
+					strcat(checkurl,urlnoprefixnoslash);
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '");
+					strcat(checkurl,urlnoprefix);strcat(checkurl,"index.html");
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR OR url_noprefix = '");
+					strcat(checkurl,urlnoprefix);strcat(checkurl,"index.htm");
+					strcat(checkurl,"' AND time > NOW() - INTERVAL 12 HOUR");
+				}
+				//query db
+				if (mysql_query(con, checkurl)) 
+				{
+					finish_with_error(con);
+				}
+				MYSQL_RES *resultfailedurlcheck = mysql_store_result(con);
+				if(resultfailedurlcheck == NULL)
+				{
+					finish_with_error(con);
+				}
+				//grab the first entry (fifo)
+				MYSQL_ROW rowFailedURLCheck = mysql_fetch_row(resultfailedurlcheck);
+				if(rowFailedURLCheck != NULL)
+				{						
+					sanity=0;
+					alreadylogged = 1;
+					printf("\nThis URL failed to crawl previously. It cannot be crawled again until 12 hours past time of failure.");
+				}
+				mysql_free_result(resultfailedurlcheck);
+				if (mysql_query(con, "use wiby")) 
+				{
+					finish_with_error(con);
+				}				
 			}
 
 			//printf("\n\n%ld, %ld, %ld, %ld, %ld\n",previousID[0],previousID[1],previousID[2],previousID[3],previousID[4]);
@@ -748,7 +802,7 @@ int main(int argc, char **argv)
 				}
 
 				//check if rules are enforced (only for pages that are autocrawled)
-				if(force_rules != 0 && force_rules[0]=='1' && task != 0 && task[0]=='2' && noindex == 0){
+				if(force_rules != 0 && force_rules[0]=='1' && task != 0 && task[0]=='2' && noindex == 0 && response_code == 200){
 					if(num_scripts > 2 || num_stylesheets > 2){
 						noindex = 1;
 						printf("\nFailed rule check");
@@ -941,7 +995,7 @@ int main(int argc, char **argv)
 						}
 
 						//strcpy(windexinsert,"INSERT INTO windex (url,title,tags,description,body,worksafe,enable,date,approver,surprise,updatable) VALUES ('");
-						strcpy(windexinsert,"INSERT INTO windex (url,url_noprefix,title,description,body,worksafe,enable,date,approver,surprise,http,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,shard) VALUES ('");
+						strcpy(windexinsert,"INSERT INTO windex (url,url_noprefix,title,description,body,worksafe,enable,date,approver,surprise,http,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,shard) VALUES ('");
 
 						strcpy(windexupdate,"UPDATE windex SET url = '");
 
@@ -1049,6 +1103,8 @@ int main(int argc, char **argv)
 									strcat(windexinsert,crawl_type);
 									strcat(windexinsert,",");
 									strcat(windexinsert,"0");
+									strcat(windexinsert,", force_rules = ");
+									strcat(windexinsert,force_rules);
 								}else{
 									strcat(windexinsert,",");
 									strcat(windexinsert,"NULL,");
@@ -1057,7 +1113,9 @@ int main(int argc, char **argv)
 									strcat(windexinsert,",");
 									strcat(windexinsert,crawl_type);
 									strcat(windexinsert,",");
-									strcat(windexinsert,crawl_repeat);								
+									strcat(windexinsert,crawl_repeat);
+									strcat(windexinsert,", force_rules = ");
+									strcat(windexinsert,force_rules);							
 								}
 								strcat(windexinsert,",");
 								strcat(windexinsert,shardnumstr);	
@@ -1168,6 +1226,8 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,crawl_type);
 										strcat(windexRandUpdate,", crawl_repeat = ");
 										strcat(windexRandUpdate,crawl_repeat);
+										strcat(windexRandUpdate,", force_rules = ");
+										strcat(windexRandUpdate,force_rules);
 									}else if(task != 0 && task[0]=='2'){//came from link crawling
 										strcat(windexRandUpdate,", crawl_tree = '");
 										strcat(windexRandUpdate,crawl_tree);
@@ -1179,6 +1239,8 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,crawl_type);
 										strcat(windexRandUpdate,", crawl_repeat = ");
 										strcat(windexRandUpdate,"0");
+										strcat(windexRandUpdate,", force_rules = ");
+										strcat(windexRandUpdate,force_rules);
 									}
 									strcat(windexRandUpdate,", updated = CURRENT_TIMESTAMP, date = now(), fault = 0 WHERE id = ");
 									strcat(windexRandUpdate,randID);
@@ -1229,6 +1291,8 @@ int main(int argc, char **argv)
 											strcat(windexRandUpdate,crawl_type);
 											strcat(windexRandUpdate,", crawl_repeat = ");
 											strcat(windexRandUpdate,crawl_repeat);
+											strcat(windexRandUpdate,", force_rules = ");
+											strcat(windexRandUpdate,force_rules);
 										}else if(task != 0 && task[0]=='2'){//came from link crawling
 											strcat(windexRandUpdate,", crawl_tree = '");
 											strcat(windexRandUpdate,crawl_tree);
@@ -1240,6 +1304,8 @@ int main(int argc, char **argv)
 											strcat(windexRandUpdate,crawl_type);
 											strcat(windexRandUpdate,", crawl_repeat = ");
 											strcat(windexRandUpdate,"0");
+											strcat(windexRandUpdate,", force_rules = ");
+											strcat(windexRandUpdate,force_rules);
 										}
 										strcat(windexRandUpdate,", updated = CURRENT_TIMESTAMP, date = now(), fault = 0 WHERE id = ");
 										strcat(windexRandUpdate,randID);
@@ -1288,13 +1354,15 @@ int main(int argc, char **argv)
 							strcat(windexupdate,httpAllow);
 							strcat(windexupdate,", updatable = ");
 							strcat(windexupdate,updatable);
-							if(task==0){//didn't come from refresh or link crawling  VERIFY THIS IS RIGHT
+							if(task==0){//didn't come from refresh or link crawling
 								strcat(windexupdate,", crawl_pages = ");
 								strcat(windexupdate,crawl_pages);
 								strcat(windexupdate,", crawl_type = ");
 								strcat(windexupdate,crawl_type);
 								strcat(windexupdate,", crawl_repeat = ");
 								strcat(windexupdate,crawl_repeat);
+								strcat(windexupdate,", force_rules = ");
+								strcat(windexupdate,force_rules);
 							}else if(task != 0 && task[0]=='2' && idexistsalready == 0){//came from link crawling
 								strcat(windexupdate,", crawl_tree = '");
 								strcat(windexupdate,crawl_tree);
@@ -1306,6 +1374,8 @@ int main(int argc, char **argv)
 								strcat(windexupdate,crawl_type);
 								strcat(windexupdate,", crawl_repeat = ");
 								strcat(windexupdate,"0");
+								strcat(windexupdate,", force_rules = ");
+								strcat(windexupdate,force_rules);
 							}
 							if(copiedRandom == 0)//normal update
 								strcat(windexupdate,", updated = CURRENT_TIMESTAMP, fault = 0 WHERE id = ");
@@ -1356,13 +1426,15 @@ int main(int argc, char **argv)
 								strcat(windexupdate,httpAllow);
 								strcat(windexupdate,", updatable = ");
 								strcat(windexupdate,updatable);
-								if(task==0){//didn't come from refresh or link crawling  VERIFY THIS IS RIGHT
+								if(task==0){//didn't come from refresh or link crawling
 									strcat(windexupdate,", crawl_pages = ");
 									strcat(windexupdate,crawl_pages);
 									strcat(windexupdate,", crawl_type = ");
 									strcat(windexupdate,crawl_type);
 									strcat(windexupdate,", crawl_repeat = ");
 									strcat(windexupdate,crawl_repeat);
+									strcat(windexupdate,", force_rules = ");
+									strcat(windexupdate,force_rules);
 								}
 								strcat(windexupdate,", updated = CURRENT_TIMESTAMP, fault = 0 WHERE id = ");
 								strcat(windexupdate,idexistsvalue);//will be same as randID if a new page is replacing that row
@@ -1524,11 +1596,32 @@ int main(int argc, char **argv)
 								}
 							}				
 						}
-						else{
+						else
+						{
 							FILE *abandoned = fopen("abandoned.txt", "a");
 							fputs (url,abandoned);
 							fputs ("\r\n",abandoned);
 							fclose(abandoned);
+							//log any url that fails while link crawling, prevents repeated attempts to crawl a failed url
+							if(task !=0 && task[0]=='2' && alreadylogged==0){
+								if (mysql_query(con, "use wibytemp")) 
+								{
+									finish_with_error(con);
+								}
+								char sqlquerylogfail[2000];
+								memset(sqlquerylogfail,0,2000);
+								strcpy(sqlquerylogfail,"INSERT INTO failed (url_noprefix) VALUES('");
+								strcat(sqlquerylogfail,urlnoprefix);
+								strcat(sqlquerylogfail,"')");
+								if (mysql_query(con, sqlquerylogfail)) 
+								{
+									finish_with_error(con);
+								}
+								if (mysql_query(con, "use wiby")) 
+								{
+									finish_with_error(con);
+								}							
+							}
 						}
 					}
 
