@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 			memset(checkurl,0,checkurlsize);
 			if(task == 0 || task[0] == '2'){//index request did not come from refresh scheduler, or is an autocrawl url
 				//strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url FROM windex WHERE url = 'http://"); //replace this with a simple check for url_noprefix column match
-				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url_noprefix = '"); 
+				strcpy(checkurl,"SELECT id,updatable,title,enable,fault,url,url_noprefix,shard FROM windex WHERE url_noprefix = '"); 
 				if(slashfound==0)
 				{
 					strcat(checkurl,urlnoprefix);
@@ -346,6 +346,7 @@ int main(int argc, char **argv)
 			char *dbtitle;	
 			char *fault;
 			char *dburl;
+			char *dburl_noprefix;
 			char *shard;
 
 			//Catalog the previous crawl attempts (to see if they are all for the same page - which would be a bad sign)
@@ -368,7 +369,8 @@ int main(int argc, char **argv)
 				enableOldDBval = row[3];
 				fault = row[4];
 				dburl=row[5];
-				shard=row[6];
+				dburl_noprefix=row[6];
+				shard=row[7];
 				if(task != 0 && task[0]=='2')
 					alreadydone=1;
 			}
@@ -616,12 +618,12 @@ int main(int argc, char **argv)
 						}
 					}	
 
-					prefixsize = httpswww+httpwww+https+http;
+					int finalURL_prefixsize = httpswww+httpwww+https+http;
 					urlcount=urlnoprefixcount=0;
 
 					//store the url without prefix to urlnoprefix
 					while(finalURL[urlcount] != 0){
-						if(urlcount>prefixsize-1)
+						if(urlcount>finalURL_prefixsize-1)
 						{	
 							finalURLnoprefix[urlnoprefixcount]=finalURL[urlcount];
 							urlnoprefixcount++;
@@ -635,7 +637,7 @@ int main(int argc, char **argv)
 						mysql_free_result(resulturlcheck);
 						char doublecheckurl[finalURLsize+100];
 						memset(doublecheckurl,0,finalURLsize+100);
-						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url,shard FROM windex WHERE url = '");
+						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url,url_noprefix,shard FROM windex WHERE url = '");
 						strcat(doublecheckurl,finalURL);
 						strcat(doublecheckurl,"';");
 						if (mysql_query(con, doublecheckurl)) 
@@ -659,8 +661,9 @@ int main(int argc, char **argv)
 							enableOldDBval = row[3];
 							fault = row[4];
 							dburl=row[5];
-							shard=row[6];
-							if(task != 0 && task[0]=='2')
+							dburl_noprefix=row[6];
+							shard=row[7];
+							if((task != 0 && task[0]=='2') || updatableOldDBval[0] == '0')
 								alreadydone=1;
 							foundindoublecheck=1;
 						}
@@ -908,27 +911,13 @@ int main(int argc, char **argv)
 						}
 
 						//check if original dburl is now getting redirected from finalurl (should be sent to review)
-						int finalUrlsize_noprefix, dburlsize_noprefix = 0, finalURL_prefixsize = 0, dburl_prefixsize = 0,dburlsize=strlen(dburl);
-						if(finalURL[4] == ':'){//if its just a switch from http to https, ignore
-							finalUrlsize_noprefix = finalURLsize - 7;
-							finalURL_prefixsize = 7;
-						}else{
-							finalUrlsize_noprefix = finalURLsize - 8;
-							finalURL_prefixsize = 8;
-						}
-						if(dburl[4] == ':'){
-							dburlsize_noprefix = dburlsize - 7;
-							dburl_prefixsize = 7;
-						}else{
-							dburlsize_noprefix = dburlsize - 8;
-							dburl_prefixsize = 8;
-						}
-						if(finalURLsize-finalURL_prefixsize != dburlsize-dburl_prefixsize){ 
+						int finalURLnoprefix_size = strlen(finalURLnoprefix), dburl_noprefix_size = strlen(dburl_noprefix);
+						if(finalURLnoprefix_size != dburl_noprefix_size){ 
 							redirected = 1;
 							printf("\nIndexed page is being redirected.");
 						}else{
-							for(int i=0;i<finalUrlsize_noprefix;i++){
-								if(dburl[i+dburl_prefixsize] != finalURL[i+finalURL_prefixsize]){
+							for(int i=0;i<finalURLnoprefix_size;i++){
+								if(dburl_noprefix[i] != finalURLnoprefix[i]){
 									redirected = 1;
 									printf("\nIndexed page is being redirected.");
 									break;
