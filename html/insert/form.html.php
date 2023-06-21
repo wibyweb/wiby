@@ -78,7 +78,7 @@
         <textarea id="enable" name="enable"></textarea> 
       </div> 
       <div>
-        <label for="updatable">updatable (0 for no, or integer value 1-6, 1 is default):</label>   
+        <label for="updatable">updatable (0 for no, or integer value 1-6):</label>   
 
         <textarea id="updatable" name="updatable"></textarea> 
       </div> 

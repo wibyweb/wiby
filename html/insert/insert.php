@@ -37,6 +37,10 @@
  
 	    $url = mysqli_real_escape_string($link, $_POST['url']);
 	    $url = str_replace("''", "%27", $url); 
+	    $url_noprefix = str_ireplace("http://","", $url);
+	    $url_noprefix = str_ireplace("https://","", $url);
+	    $url_noprefix = str_ireplace("http://www.","", $url);
+	    $url_noprefix = str_ireplace("https://www.","", $url);
 		$title = mysqli_real_escape_string($link, $_POST['title']);
 		$tags = mysqli_real_escape_string($link, $_POST['tags']);
 		$description = mysqli_real_escape_string($link, $_POST['description']);
@@ -49,8 +53,8 @@
 		$shard = mysqli_real_escape_string($link, $_POST['shard']);
 
 		if($shard == ""){
-			$sql = "INSERT INTO windex (url,title,tags,description,body,http,surprise,worksafe,enable,updatable,approver) 
-	VALUES ('".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$_SESSION["user"]."')";
+			$sql = "INSERT INTO windex (url,url_noprefix,title,tags,description,body,http,surprise,worksafe,enable,updatable,date,approver) 
+	VALUES ('".$url."','".$url_noprefix."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."',now(),'".$_SESSION["user"]."')";
 			if (!mysqli_query($link, $sql))   
 			{
 			  $error = 'Error fetching index: ' . mysqli_error($link);  
@@ -58,8 +62,8 @@
 			  exit(); 
 			}	
 		}else{
-			$sql = "INSERT INTO windex (url,title,tags,description,body,http,surprise,worksafe,enable,updatable,shard,approver) 
-	VALUES ('".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$shard."','".$_SESSION["user"]."')";
+			$sql = "INSERT INTO windex (url,url_noprefix,title,tags,description,body,http,surprise,worksafe,enable,updatable,date,shard,approver) 
+	VALUES ('".$url."','".$url_noprefix."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."',now(),'".$shard."','".$_SESSION["user"]."')";
 			if (!mysqli_query($link, $sql))   
 			{
 			  $error = 'Error fetching index: ' . mysqli_error($link);  
@@ -80,8 +84,8 @@
 			}	
 			$id = $idArray[0];
 						
-			$sql = "INSERT INTO ws$shard (id,url,title,tags,description,body,http,surprise,worksafe,enable,updatable,shard,approver) 
-	VALUES ('".$id."','".$url."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."','".$shard."','".$_SESSION["user"]."')";
+			$sql = "INSERT INTO ws$shard (id,url,url_noprefix,title,tags,description,body,http,surprise,worksafe,enable,updatable,date,shard,approver) 
+	VALUES ('".$id."','".$url."','".$url_noprefix."','".$title."','".$tags."','".$description."','".$body."','".$http."','".$surprise."','".$worksafe."','".$enable."','".$updatable."',now(),'".$shard."','".$_SESSION["user"]."')";
 			if (!mysqli_query($link, $sql))   
 			{
 			  $error = 'Error fetching index: ' . mysqli_error($link);  
