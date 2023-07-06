@@ -996,7 +996,7 @@ int main(int argc, char **argv)
 						MYSQL_RES *resultRandID;
 
 						if(idexistsalready == 0){//Insert new entry
-							//For search topics to be evenly discovered by all replication servers assigned to a specific shard table, new rows must be scattered randomly across the database insead of sequental:
+							//For search topics to be evenly discovered by all replicas or duplicate connections assigned to a specific search section, new rows must be scattered randomly across the database insead of sequental:
 							//Existing rows will be randomly selected and copied (inserted) into a new row at the bottom, and the new page will take the ID number of the old one through an update.
 							//select id from windex where enable = 1 order by rand() limit 1;
 							//insert into windex (url,title,tags,description,body,surprise,http,updatable,worksafe,enable,date,updated,approver,fault) select url,title,tags,description,body,surprise,http,updatable,worksafe,enable,date,updated,approver,fault from windex where id = 1338;
