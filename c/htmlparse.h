@@ -569,7 +569,7 @@ int canCrawl(int urlSize, char *urltocheck){
 	}
 
 	//restrict file extensions to these
-	if(extfound==1 && (locateInURL(urltocheck,".html",".HTML",5,urlSize)==1 || locateInURL(urltocheck,".htm",".HTM",4,urlSize)==1 || locateInURL(urltocheck,".txt",".TXT",4,urlSize)==1 || locateInURL(urltocheck,".php",".PHP",4,urlSize)==1 || locateInURL(urltocheck,".asp",".ASP",4,urlSize)==1 || locateInURL(urltocheck,".xhtml",".XHTML",6,urlSize)==1)){
+	if(extfound==1 && (locateInURL(urltocheck,".html",".HTML",5,urlSize)==1 || locateInURL(urltocheck,".htm",".HTM",4,urlSize)==1 || locateInURL(urltocheck,".txt",".TXT",4,urlSize)==1 || locateInURL(urltocheck,".php",".PHP",4,urlSize)==1 || locateInURL(urltocheck,".asp",".ASP",4,urlSize)==1 || locateInURL(urltocheck,".xhtml",".XHTML",6,urlSize)==1 || locateInURL(urltocheck,".shtml",".SHTML",6,urlSize)==1)){
 		return 1;
 	}	
 	if(extfound==0 )

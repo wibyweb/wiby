@@ -590,8 +590,8 @@ int main(int argc, char **argv)
 					printf("\nURL is too long");
 				}
 
-				if(canCrawl(finalURLsize,finalURL)==0){
-					printf("\nfinalURL failed crawl rules.");
+				if(task != 0 && task[0]=='2' && canCrawl(finalURLsize,finalURL)==0){
+					printf("\nEffective URL failed crawl rules.");
 					skipurl=1;
 				}
 
