@@ -1,15 +1,13 @@
 //Wiby Web Crawler
 
-//gcc cr.c -o cr -I/usr/include/mysql -lmysqlclient -lcurl -std=c99 -O3
-//#include </usr/include/mysql/mysql.h>
-#include <mysql.h>
+#include </usr/include/mysql/mysql.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
-#include </usr/include/curl/curl.h> //RHEL/Rocky
-#include </usr/include/curl/easy.h> //RHEL/Rocky
-//#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
-//#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
+//#include </usr/include/curl/curl.h> //RHEL/Rocky
+//#include </usr/include/curl/easy.h> //RHEL/Rocky
+#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
+#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
 #include "htmlparse.h"
 #include "urlparse.h"
 #include "checkrobots.h"
