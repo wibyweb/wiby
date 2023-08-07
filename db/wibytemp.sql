@@ -16,13 +16,13 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `failed`
+-- Table structure for table `crawled`
 --
 
-DROP TABLE IF EXISTS `failed`;
+DROP TABLE IF EXISTS `crawled`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `failed` (
+CREATE TABLE `crawled` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `url_noprefix` text,
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -32,12 +32,12 @@ CREATE TABLE `failed` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `failed`
+-- Dumping data for table `crawled`
 --
 
-LOCK TABLES `failed` WRITE;
-/*!40000 ALTER TABLE `failed` DISABLE KEYS */;
-/*!40000 ALTER TABLE `failed` ENABLE KEYS */;
+LOCK TABLES `crawled` WRITE;
+/*!40000 ALTER TABLE `crawled` DISABLE KEYS */;
+/*!40000 ALTER TABLE `crawled` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -123,4 +123,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-07-05 22:32:24
+-- Dump completed on 2023-08-05 23:15:21
