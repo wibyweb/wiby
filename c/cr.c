@@ -1,13 +1,15 @@
 //Wiby Web Crawler
 
-#include </usr/include/mysql/mysql.h>
+//gcc cr.c -o cr -I/usr/include/mysql -lmysqlclient -lcurl -std=c99 -O3
+//#include </usr/include/mysql/mysql.h>
+#include <mysql.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
-//#include </usr/include/curl/curl.h> //RHEL/Rocky
-//#include </usr/include/curl/easy.h> //RHEL/Rocky
-#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
-#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
+#include </usr/include/curl/curl.h> //RHEL/Rocky
+#include </usr/include/curl/easy.h> //RHEL/Rocky
+//#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
+//#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
 #include "htmlparse.h"
 #include "urlparse.h"
 #include "checkrobots.h"
@@ -418,15 +420,15 @@ int main(int argc, char **argv)
 					sleep(1);//do link crawling slowly
 			}
 
-			//if crawling through hyperlinks, doublecheck that the URL did not fail being crawled over the last 12 hours  
+			//if crawling through hyperlinks, doublecheck that this hyperlink hasn't been crawled recently, even if it was redirected elsewhere or failed
 			int alreadylogged = 0;
-			if(failedcrawl==0 && task !=0 && task[0]=='2'){
+			if(failedcrawl==0 && task !=0 && task[0]=='2' && alreadydone == 0){
 				if (mysql_query(con, "use wibytemp")) 
 				{
 					finish_with_error(con);
 				}
 				memset(checkurl,0,checkurlsize);
-				strcpy(checkurl,"SELECT id FROM failed WHERE url_noprefix = '");
+				strcpy(checkurl,"SELECT id FROM crawled WHERE url_noprefix = '");
 				if(slashfound==0)
 				{
 					strcat(checkurl,urlnoprefix);
@@ -451,20 +453,20 @@ int main(int argc, char **argv)
 				{
 					finish_with_error(con);
 				}
-				MYSQL_RES *resultfailedurlcheck = mysql_store_result(con);
-				if(resultfailedurlcheck == NULL)
+				MYSQL_RES *resultcrawledurlcheck = mysql_store_result(con);
+				if(resultcrawledurlcheck == NULL)
 				{
 					finish_with_error(con);
 				}
 				//grab the first entry (fifo)
-				MYSQL_ROW rowFailedURLCheck = mysql_fetch_row(resultfailedurlcheck);
-				if(rowFailedURLCheck != NULL)
+				MYSQL_ROW rowCrawledURLCheck = mysql_fetch_row(resultcrawledurlcheck);
+				if(rowCrawledURLCheck != NULL)
 				{						
 					sanity=0;
 					alreadylogged = 1;
-					printf("\nThis URL failed to crawl previously. It cannot be crawled again until 12 hours past time of failure.");
+					printf("\nThis hyperlink was crawled recently. It cannot be crawled again for at least 12 hours.");
 				}
-				mysql_free_result(resultfailedurlcheck);
+				mysql_free_result(resultcrawledurlcheck);
 				if (mysql_query(con, "use wiby")) 
 				{
 					finish_with_error(con);
@@ -534,18 +536,13 @@ int main(int argc, char **argv)
 
 					fclose(fp);
 				}
-
-				if(finalURLsize>500){
-					skipurl=1;
-					printf("\nURL is too long");
-				}
 				
 				//if effective URL contains ':443', CURL will fail to download this page on next update. Remove :443 from finalURL.
 				char *ptr_substring = NULL;
 				int substringpos=0;
 				if(finalURLsize > 3)
 					ptr_substring = strstr(finalURL,":443");
-				if(ptr_substring != NULL && skipurl == 0){
+				if(ptr_substring != NULL && skipurl == 0 && finalURLsize<=500){
 					substringpos = ptr_substring - finalURL;
 					int poscount = substringpos;
 					memcpy(correctedURL,finalURL,substringpos);//copy before substring
@@ -569,16 +566,35 @@ int main(int argc, char **argv)
 					finalURLcount++;
 				}
 
-				//this check is done again incase there is a redirect to a link containing parameters when crawling through hyperlinks
-				if(task != 0 && task[0]=='2'){
-					finalURLcount=0;
-					while(finalURL[finalURLcount]!=0){
-						if(finalURL[finalURLcount]=='?'){
-							skipurl=1;
-							printf("\nURL contains parameters. Skipping.");
-						}
-						finalURLcount++;
+				//when crawling through hyperlinks, log that the url was accessed, use the original url, not finalURL
+				if(skipurl==0 && task != 0 && task[0]=='2'){
+					if (mysql_query(con, "use wibytemp")) 
+					{
+						finish_with_error(con);
 					}
+					char sqlquerylogurl[2000];
+					memset(sqlquerylogurl,0,2000);
+					strcpy(sqlquerylogurl,"INSERT INTO crawled (url_noprefix) VALUES('");
+					strcat(sqlquerylogurl,urlnoprefix);
+					strcat(sqlquerylogurl,"')");
+					if (mysql_query(con, sqlquerylogurl)) 
+					{
+						finish_with_error(con);
+					}
+					if (mysql_query(con, "use wiby")) 
+					{
+						finish_with_error(con);
+					}							
+				}
+
+				if(finalURLsize>500){
+					skipurl=1;
+					printf("\nURL is too long");
+				}
+
+				if(canCrawl(finalURLsize,finalURL)==0){
+					printf("\nfinalURL failed crawl rules.");
+					skipurl=1;
 				}
 
 				char finalURLnoprefix[finalURLsize-prefixsize+100];
@@ -618,15 +634,15 @@ int main(int argc, char **argv)
 						}
 					}	
 
-					int finalURL_prefixsize = httpswww+httpwww+https+http;
-					urlcount=urlnoprefixcount=0;
+					int finalURL_prefixsize = httpswww+httpwww+https+http, finalurlnoprefixcount = 0;
+					urlcount=0;
 
-					//store the url without prefix to urlnoprefix
+					//store the final url without prefix to finalURLnoprefix
 					while(finalURL[urlcount] != 0){
 						if(urlcount>finalURL_prefixsize-1)
 						{	
-							finalURLnoprefix[urlnoprefixcount]=finalURL[urlcount];
-							urlnoprefixcount++;
+							finalURLnoprefix[finalurlnoprefixcount]=finalURL[urlcount];
+							finalurlnoprefixcount++;
 						}
 						urlcount++;
 					}
@@ -1589,26 +1605,6 @@ int main(int argc, char **argv)
 							fputs (url,abandoned);
 							fputs ("\r\n",abandoned);
 							fclose(abandoned);
-							//log any url that fails while link crawling, prevents repeated attempts to crawl a failed url
-							if(task !=0 && task[0]=='2' && alreadylogged==0){
-								if (mysql_query(con, "use wibytemp")) 
-								{
-									finish_with_error(con);
-								}
-								char sqlquerylogfail[2000];
-								memset(sqlquerylogfail,0,2000);
-								strcpy(sqlquerylogfail,"INSERT INTO failed (url_noprefix) VALUES('");
-								strcat(sqlquerylogfail,urlnoprefix);
-								strcat(sqlquerylogfail,"')");
-								if (mysql_query(con, sqlquerylogfail)) 
-								{
-									finish_with_error(con);
-								}
-								if (mysql_query(con, "use wiby")) 
-								{
-									finish_with_error(con);
-								}							
-							}
 						}
 					}
 

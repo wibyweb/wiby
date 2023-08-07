@@ -30,7 +30,7 @@ long charsetsize=0,titlesize=0,keywordssize=0,descriptionsize=0,robotssize=0,bod
 int matchMySQLcharset(int html_charset_length, char *html_charset, int html_match_length, char *html_lowercase_match, char *html_uppercase_match);
 int locateInWindow(char *window, char *birdLower, char *birdUpper, int length);
 int locateInURL(char *url, char *birdLower, char *birdUpper, int length, int urlSize);
-int canCrawl(int urlSize);
+int canCrawl(int urlSize, char *urltocheck);
 void shuffleURLs(int iterations, long urlListSize);
 void sqlsafe();
 void charset2mysql();
@@ -278,7 +278,7 @@ void htmlparse(){
 				if((c == '#' && urlSize==0) || (dqcount == 2 && urlSize == 0) || (c == ' ' && urlSize == 0)) 
 					urlFound=urlTagFound=dqcount=0;
 				if((c == '>' || c == ' ') && urlFound == 1){
-					if(canCrawl(urlSize)==0 || (urlSize+urlListSize) >= (urlList_len-1)){
+					if(canCrawl(urlSize,strURL)==0 || (urlSize+urlListSize) >= (urlList_len-1)){
 						memset(strURL,0,strURL_len+1);	
 					}else{
 						strcat(urlList,strURL);
@@ -354,15 +354,15 @@ void htmlparse(){
 		shuffleURLs(10,urlListSize);	
 		//printf("\n%s",urlList);
 				
-		//print URLs to file
-/*		urlfile = fopen("url.txt","wb");
+		/*//print URLs to file
+		urlfile = fopen("url.txt","wb");
 		fputs(urlList,urlfile);
 		fclose(urlfile);
 		
 		//print shuffled URLs to file
 		shuffledurlfile = fopen("urlshuffled.txt","wb");
 		fputs(urlListShuffled,shuffledurlfile);
-		fclose(shuffledurlfile);*/	
+		fclose(shuffledurlfile);	*/
 	}
 	
 	free(fileStr);
@@ -533,31 +533,31 @@ int locateInURL(char *url, char *birdLower, char *birdUpper, int length, int url
 }
 
 //Check if url can be indexed (allow relative links for html and txt files. Removing this check will add to the queue everything listed including external links.		
-int canCrawl(int urlSize){
+int canCrawl(int urlSize, char *urltocheck){
 	int numDots=0,numSlash=0;
 	int slashpos=0,dotspos=0;
 	int extfound=0,extlocation=0,prefixfound=0;
 
 	for(int i=0;i<urlSize;i++){
-		if(urlSize>5 && strURL[i]==':' && i>3){
-			if((strURL[0]!='h' && strURL[0]!='H') || (strURL[1]!='t' && strURL[1]!='T') || (strURL[2]!='t' && strURL[2]!='T') || (strURL[3]!='p' && strURL[3]!='P') || (strURL[4]!='s' && strURL[4]!='S' && strURL[4]!=':') || (strURL[5]!=':' && strURL[5]!='/'))
+		if(urlSize>5 && urltocheck[i]==':' && i>3){
+			if((urltocheck[0]!='h' && urltocheck[0]!='H') || (urltocheck[1]!='t' && urltocheck[1]!='T') || (urltocheck[2]!='t' && urltocheck[2]!='T') || (urltocheck[3]!='p' && urltocheck[3]!='P') || (urltocheck[4]!='s' && urltocheck[4]!='S' && urltocheck[4]!=':') || (urltocheck[5]!=':' && urltocheck[5]!='/'))
 				return 0;
 			prefixfound=1;
 		}
-		if(strURL[i]=='?' || strURL[i]=='\\' || strURL[i] == '"' || strURL[i] == '\'' || strURL[i] == ' '){
+		if(urltocheck[i]=='?' || urltocheck[i]=='\\' || urltocheck[i] == '"' || urltocheck[i] == '\'' || urltocheck[i] == ' '){
 			return 0;
 		}
-		if(strURL[i]=='.'){
+		if(urltocheck[i]=='.'){
 			numDots++;
 		}
-		if(strURL[i]=='/'){
+		if(urltocheck[i]=='/'){
 			numSlash++;
 		}		
-		if(strURL[i]=='.' ){
+		if(urltocheck[i]=='.' ){
 			extfound=1;
 			extlocation=i;
 		}
-		if(strURL[i]=='/' && extfound==1 && i>extlocation){
+		if(urltocheck[i]=='/' && extfound==1 && i>extlocation){
 			extfound=0;
 		}
 		if(prefixfound==1 && numSlash-2<=0){
@@ -569,7 +569,7 @@ int canCrawl(int urlSize){
 	}
 
 	//restrict file extensions to these
-	if(extfound==1 && (locateInURL(strURL,".html",".HTML",5,urlSize)==1 || locateInURL(strURL,".htm",".HTM",4,urlSize)==1 || locateInURL(strURL,".txt",".TXT",4,urlSize)==1 || locateInURL(strURL,".php",".PHP",4,urlSize)==1 || locateInURL(strURL,".asp",".ASP",4,urlSize)==1 || locateInURL(strURL,".xhtml",".XHTML",6,urlSize)==1)){
+	if(extfound==1 && (locateInURL(urltocheck,".html",".HTML",5,urlSize)==1 || locateInURL(urltocheck,".htm",".HTM",4,urlSize)==1 || locateInURL(urltocheck,".txt",".TXT",4,urlSize)==1 || locateInURL(urltocheck,".php",".PHP",4,urlSize)==1 || locateInURL(urltocheck,".asp",".ASP",4,urlSize)==1 || locateInURL(urltocheck,".xhtml",".XHTML",6,urlSize)==1)){
 		return 1;
 	}	
 	if(extfound==0 )
