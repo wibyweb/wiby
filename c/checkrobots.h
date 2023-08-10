@@ -76,7 +76,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data_checkrobots);// send all data to this function  // 
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);// write the page body to this file handle  
 			curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,1L);//allow redirects
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
 			curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
 			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);//max num of redirects
 			curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, 1000000L);//don't download if over 1MB
