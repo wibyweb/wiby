@@ -142,7 +142,7 @@ void urlparse(char* url){
 	
 		//check for file extension like html/htm/txt if no prefix in url
 		if(noprebutisdomain==1 && urlsize>4){
-			if(checkDomain(urlnopathnoprefix_fromlist,".html",".HTML",urlnopathnoprefix_len,5)==1 || checkDomain(urlnopathnoprefix_fromlist,".htm",".HTM",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".txt",".txt",urlnopathnoprefix_len,4)==1){
+			if(checkDomain(urlnopathnoprefix_fromlist,".html",".HTML",urlnopathnoprefix_len,5)==1 || checkDomain(urlnopathnoprefix_fromlist,".htm",".HTM",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".txt",".txt",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".php",".PHP",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".shtml",".SHTML",urlnopathnoprefix_len,6)==1 || checkDomain(urlnopathnoprefix_fromlist,".xhtml",".XHTML",urlnopathnoprefix_len,6)==1 || checkDomain(urlnopathnoprefix_fromlist,".cgi",".CGI",urlnopathnoprefix_len,4)==1){
 				memset(domain,0,1000);
 				memset(urlnoprefix_fromlist,0,1000);
 				memset(urlnopathnoprefix_fromlist,0,1000);	
