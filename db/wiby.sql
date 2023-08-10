@@ -100,9 +100,9 @@ DROP TABLE IF EXISTS `indexqueue`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `indexqueue` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `url` text CHARACTER SET latin1 COLLATE latin1_swedish_ci,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `worksafe` tinyint(1) DEFAULT NULL,
-  `approver` text CHARACTER SET latin1 COLLATE latin1_swedish_ci,
+  `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `surprise` tinyint(1) DEFAULT NULL,
   `updatable` int(11) DEFAULT '1',
   `task` tinyint(4) DEFAULT NULL,
@@ -423,4 +423,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-03-26 22:26:24
+-- Dump completed on 2023-08-09 23:41:07
