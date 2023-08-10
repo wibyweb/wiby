@@ -72,7 +72,7 @@ int checkrobots(char *rURLprefix, char *rDomain, char *rURLpath)
 		if(fp = fopen(outfilename,"wb")){
 			//set curl options
 			curl_easy_setopt(curl, CURLOPT_URL, robotsurl);// set URL to get here 
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; Wibybot; https://wiby.me/)"); 
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; WebCrawler; SearchEngine)"); 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data_checkrobots);// send all data to this function  // 
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);// write the page body to this file handle  
 			curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,1L);//allow redirects
