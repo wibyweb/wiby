@@ -284,7 +284,7 @@ To view the parameters, type './cr -h'. Without any parameters set, you can only
 If using more than one crawler, update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using.
 <br>
 <br>
-Note that you may need to change the crawler's user-agent if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
+Note that you may need to change the crawler's user-agent (CURLOPT_USERAGENT in cr.c and checkrobots.h) if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
 <br> 
 <br>
 Make sure the robots folder exists. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. 
