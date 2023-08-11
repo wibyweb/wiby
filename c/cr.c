@@ -1221,6 +1221,8 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate,", updatable = ");
 									strcat(windexRandUpdate,updatable);
 									if(task==0){//didn't come from refresh or link crawling 
+										strcat(windexRandUpdate,", crawl_tree = NULL");
+										strcat(windexRandUpdate,", crawl_family = NULL");
 										strcat(windexRandUpdate,", crawl_pages = ");
 										strcat(windexRandUpdate,crawl_pages);
 										strcat(windexRandUpdate,", crawl_type = ");
@@ -1285,7 +1287,9 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,httpAllow);
 										strcat(windexRandUpdate,", updatable = ");
 										strcat(windexRandUpdate,updatable);
-										if(task==0){//didn't come from refresh or link crawling  
+										if(task==0){//didn't come from refresh or link crawling
+											strcat(windexRandUpdate,", crawl_tree = NULL");
+											strcat(windexRandUpdate,", crawl_family = NULL");
 											strcat(windexRandUpdate,", crawl_pages = ");
 											strcat(windexRandUpdate,crawl_pages);
 											strcat(windexRandUpdate,", crawl_type = ");
@@ -1356,6 +1360,8 @@ int main(int argc, char **argv)
 							strcat(windexupdate,", updatable = ");
 							strcat(windexupdate,updatable);
 							if(task==0){//didn't come from refresh or link crawling
+								strcat(windexupdate,", crawl_tree = NULL");
+								strcat(windexupdate,", crawl_family = NULL");
 								strcat(windexupdate,", crawl_pages = ");
 								strcat(windexupdate,crawl_pages);
 								strcat(windexupdate,", crawl_type = ");
@@ -1428,6 +1434,8 @@ int main(int argc, char **argv)
 								strcat(windexupdate,", updatable = ");
 								strcat(windexupdate,updatable);
 								if(task==0){//didn't come from refresh or link crawling
+									strcat(windexupdate,", crawl_tree = NULL");
+									strcat(windexupdate,", crawl_family = NULL");
 									strcat(windexupdate,", crawl_pages = ");
 									strcat(windexupdate,crawl_pages);
 									strcat(windexupdate,", crawl_type = ");
