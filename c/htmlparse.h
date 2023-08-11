@@ -303,7 +303,7 @@ void htmlparse(){
 			if(urlFound == 0 && urlTagFound == 0 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && locateInWindow(windowWithSpaces,"<a ","<A ",3)==1){//sometimes there is something between "<a" and "href"
 				urlTagFound = 1;
 			}			
-			if(urlFound == 0 && urlTagFound == 1 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && locateInWindow(window,"href=","HREF=",5)==1){
+			if(urlFound == 0 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && (locateInWindow(window,"ahref=","AHREF=",6)==1) || (urlTagFound == 1 && locateInWindow(window,"href=","HREF=",5)==1)){
 				urlFound = 1;
 			}
 		}		
