@@ -196,6 +196,7 @@ Login to MySQL, create the following accounts and give them the correct access:
 create user 'guest'@'localhost' identified by 'qwer';
 create user 'approver'@'localhost' identified by 'foobar';
 create user 'crawler'@'localhost' identified by 'seekout';
+create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
 use wiby;
 grant select on accounts to 'approver'@'localhost';
 grant select on reviewqueue to 'approver'@'localhost';
@@ -238,6 +239,11 @@ grant select on ws3 to 'crawler'@'localhost';
 grant update on ws3 to 'crawler'@'localhost';
 grant insert on ws3 to 'crawler'@'localhost';
 grant delete on ws3 to 'crawler'@'localhost';
+grant select on windex to 'remote_guest'@'%';
+grant select on ws0 to 'remote_guest'@'%';
+grant select on ws1 to 'remote_guest'@'%';
+grant select on ws2 to 'remote_guest'@'%';
+grant select on ws3 to 'remote_guest'@'%';
 use wibytemp;
 grant select on titlecheck to 'crawler'@'localhost';
 grant insert on titlecheck to 'crawler'@'localhost';
@@ -298,7 +304,7 @@ If crawling through hyperlinks on a page, the following file types are accepted:
 You can run the core server on startup with a cron job.
 <br>
 <br>
-If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have a lot of available CPU cores. Make sure to read the scaling section. 
+If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have at least four available CPU cores. It is recommended you use 'core' as it makes better use of your CPU, but make sure to read the scaling section.
 <br>
 <br>
 If you want to use 1core on a server separate from your reverse proxy server, modify line 37 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
@@ -460,10 +466,10 @@ If you need to stop the web crawler in a situation where it was accidently queue
 You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs.
 <br>
 <br>
-If you have a machine with a huge amount of resources and cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also.
+If you have a machine with at least four CPU cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also. By default, four duplicate connections are already set to use your existing machine.
 <br>
 <br>
-The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, drastically speeding up search speeds especially for multi-word queries. By default, single-word queries will not initiate multiple connections across replicas. To enable that on single-word queries, comment out the IF statement on line 401 and rebuild the core application.
+The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, drastically speeding up search speeds especially for multi-word queries. 
 <br>
 <br>
 The search results per page limit is 12, and must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
@@ -474,10 +480,10 @@ The reverse proxy and replica servers can be connected through a VPN such as wir
 the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas, or you can use these quick instructions <a href="guide.html#replica">here</a>.
 <br>
 <br>
-There are two methods of scaling, the default method reads different sections of the 'windex' table, dividing the work of searching those sections between replicas. The second method is more complicated and was developed after the first method as an experiment, where the crawler also stores different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use, although they won't be referenced if you stick with the default method. You can include made-up shard table names in that case.
+The scaling method works by having the crawler also store different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use.
 <br>
 <br>
-To try out the sharding method, indicate the number of shards in the 'shards' file that the crawler references. Also set 'shards := true' on line 48 of the core application. You also have to initially balance out the shard tables, which is explained <a href="guide.html#balance">here</a>. This method offers a speed advantage for exact searches and less hard-drive storage across replicas if you use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>, but also requires the primary database and full replicas to use double the storage. 
+Indicate the number of shards in the 'shards' file that the crawler references. Four shard tables are already preconfigured. If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. If for some reason you only want to host a specific shard table on a replica instead, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
 <br>
 <br>
 <br>
@@ -598,7 +604,6 @@ FLUSH PRIVILEGES;
 </pre>
 <br>
 <a name="create"><b>Creating More Shard Tables</b></a>
-<p class="pin">*Not needed for default scaling method</p>
 <br>
 There are four shard tables already in the database, but if you need more: 
 <br>
@@ -614,9 +619,8 @@ You will need to rebalance the shards, follow the steps below, then restart the 
 <br>
 <br>
 <a name="balance"><b>Balancing Additional Shards</b>
-<p class="pin">*Not needed for default scaling method</p>
 <br>
-For now you would have to manually rebalance shards on first-time use. The most straight-forward way to rebalance them is to: 
+For now you would have to manually rebalance shards when adding new ones. The most straight-forward way to rebalance them is to: 
 <br>
 <br>
 Update 'servers.csv' with the additional shard connections being used.
@@ -644,7 +648,6 @@ These changes will propagate down to the replicas, and the core application will
 <br>
 <br>
 <a name="accessshards"><b>Accessing Additional Shards</b></a>
-<p class="pin">*Not needed for default scaling method</p>
 <br>
 Apply the account access permissions listed <a href="guide.html#replicaaccounts">here</a> for core app and rt access to each replica and <a href="guide.html#accounts">here</a> for crawler access to each new shard table on the primary server or replica hosting the core app. 
 <br>
@@ -660,9 +663,6 @@ Add the replica server's VPN address/port to upstream remote_core {} from the de
 <h3>Additional Notes</h3>
 The crawler stores a maximum of 80KB worth of text from the body of each webpage. To change this limit, edit the "body_len" definition from inside htmlparse.h and recompile the crawler. 
 This will affect the total size of the index and overall search speeds.
-<br>
-<br>
-The default scaling method does not use the 'main' index. You can drop that index ("DROP INDEX main ON windex;") if you need to free up hard drive space. Don't do that if you are using 1core or the shard scaling method.
 </p>
 </blockquote>
 </body>    
