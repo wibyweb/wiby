@@ -45,7 +45,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "%s \n", r.URL.RawQuery)
 
 	//Indicate whether or not you are using shard tables
-	shards := false
+	shards := true
 
 	//check if worksafe+https cookie enabled.
 	filterHTTPS := false
