@@ -244,14 +244,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//if query is just 1 or 2 letters, help make it work. Also CIA :D
-		oneletterquery := 0
+		//oneletterquery := 0
 		if len(query) < 3 || query == "cia" || query == "CIA" {
 			queryfix := " " + query + " *"
 			query = queryfix
 			queryNoQuotes = queryfix
-			if len(query) == 1 {
+			/*if len(query) == 1 {
 				oneletterquery = 1
-			}
+			}*/
 		}
 		if query == "c++" || query == "C++" { //shitty but works for now
 			query = "c++ programming"
@@ -384,7 +384,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		var idListChans []chan string 
 
 		oneword := false
-		if strings.Index(query, " ") != -1{
+		if strings.Index(query, " ") == -1{
 			oneword = true
 		}
 
@@ -398,9 +398,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//this switches off use of multiple connections to process a one word query. Should remove this if the database grows significantly larger
-		if strings.Contains(query, " ") == false && oneletterquery == 0 {
+		/*if strings.Contains(query, " ") == false && oneletterquery == 0 {
 			noservers = true
-		}
+		}*/
 
 		queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
 
@@ -448,7 +448,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < numServers; i++ {
 				idListChans = append(idListChans, make(chan string))
 			}
-			
+
 			for _, server := range servers {
 				serverSettings := strings.Split(server, ",")
 				if len(serverSettings) == 4 { //if line contains all 4 settings
@@ -461,7 +461,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					sqlString := "remote_guest:d0gemuchw0w@tcp(" + serverIP + ":3306)/wiby?charset=utf8mb4"
 					//	fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 					//send special distributed query, only need ID returned 
-					if(shards==false){
+					if(shards==false){//depricated
 						if(exactMatch==false && urlDetected==false && oneword==false){
 							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}else{
@@ -519,9 +519,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//if all went well with replication servers, send query to master containing idList and use the rangeOffset
 		if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
 			if(exactMatch==false && urlDetected==false && oneword==false){
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryWithQuotesAndFlags + "', tags) THEN 30 " + isURL + " WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) AND LOCATE('" + query + "', title) THEN 20 WHEN LOCATE('" + queryWithQuotesAndFlags + "', body) THEN 19 WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) THEN 16 WHEN LOCATE('" + queryWithQuotesAndFlags + "', description) THEN 15 WHEN LOCATE('" + query + "', title) THEN LOCATE('" + query + "', title) WHEN LOCATE('" + query + "', body) THEN 1 WHEN LOCATE('" + query + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 			}else{
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryWithQuotesAndFlags + "', tags) THEN 30 " + isURL + " WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) THEN 20 WHEN LOCATE('" + queryWithQuotesAndFlags + "', body) THEN 19 WHEN LOCATE('" + queryWithQuotesAndFlags + "', description) THEN 15 WHEN LOCATE('" + query + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 			}
 		} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
 			if(exactMatch==false && urlDetected==false && oneword==false){
@@ -732,7 +732,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						//fmt.Printf("%s %s %s %d\n",sqlString,startID,endID,numServers)
 
 						//send special distributed query, only need ID returned
-						if(shards==false){
+						if(shards==false){//depricated
 							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + " ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}else{
 							sqlQuery = "SELECT id FROM " + shard + " WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
@@ -757,7 +757,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				//if all went well with replication servers, send query to local database containing idList and use the rangeOffset
 				if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + query + "', tags) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 				} else { //else, if no replication servers or there was some sort of error, search the whole local database instead
 					if shards == false{
 						sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""					
