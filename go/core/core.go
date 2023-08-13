@@ -249,9 +249,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryfix := " " + query + " *"
 			query = queryfix
 			queryNoQuotes = queryfix
-			/*if len(query) == 1 {
-				oneletterquery = 1
-			}*/
+			//if len(query) == 1 {
+			//	oneletterquery = 1
+			//}
 		}
 		if query == "c++" || query == "C++" { //shitty but works for now
 			query = "c++ programming"
@@ -448,7 +448,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < numServers; i++ {
 				idListChans = append(idListChans, make(chan string))
 			}
-
+			
 			for _, server := range servers {
 				serverSettings := strings.Split(server, ",")
 				if len(serverSettings) == 4 { //if line contains all 4 settings
