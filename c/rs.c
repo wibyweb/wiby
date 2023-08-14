@@ -142,16 +142,12 @@ int main(int argc, char **argv)
 				if(num_cr > 0){
 					printf("\nCrawler ID: %d",cr_count);
 				}else{
-					printf("\nCrawler ID: (null)");
+					printf("\nCrawler ID: 1");
 				}
 
 				char sqlqueryinsertindexqueue[2000];
 				memset(sqlqueryinsertindexqueue,0,2000);
-				if(num_cr == 0){
-					strcpy(sqlqueryinsertindexqueue,"INSERT INTO indexqueue (url,worksafe,approver,surprise,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,task) VALUES ('");
-				}else{
-					strcpy(sqlqueryinsertindexqueue,"INSERT INTO indexqueue (url,worksafe,approver,surprise,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,task,crawler_id) VALUES ('");
-				}
+				strcpy(sqlqueryinsertindexqueue,"INSERT INTO indexqueue (url,worksafe,approver,surprise,updatable,crawl_tree,crawl_family,crawl_pages,crawl_type,crawl_repeat,force_rules,task,crawler_id) VALUES ('");
 				strcat(sqlqueryinsertindexqueue,url);strcat(sqlqueryinsertindexqueue,"','");
 				strcat(sqlqueryinsertindexqueue,worksafe);strcat(sqlqueryinsertindexqueue,"','");
 				strcat(sqlqueryinsertindexqueue,approver);strcat(sqlqueryinsertindexqueue,"','");
@@ -189,6 +185,8 @@ int main(int argc, char **argv)
 				}
 				if(num_cr > 0){
 					strcat(sqlqueryinsertindexqueue,"','");strcat(sqlqueryinsertindexqueue,str_cr_count);
+				}else{
+					strcat(sqlqueryinsertindexqueue,"','1");
 				}
 				strcat(sqlqueryinsertindexqueue,"');");
 
