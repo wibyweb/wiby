@@ -155,7 +155,7 @@ If you want to use 1core on a server separate from your reverse proxy server, mo
 You can also use index.php in the root of the www directory and not use the Go version at all. Though the PHP version is used mainly for prototyping.
 <br>
 <br>
-<h3>Build the database:</h3>
+<h3>Build the Primary Database:</h3>
 Make sure these lines are inside of /etc/mysql/my.cnf, then restart mysql
 <pre>
 [client]
@@ -191,12 +191,12 @@ Import the wiby and wibytemp database files:
 mysql -u root -p wiby < wiby.sql
 mysql -u root -p wibytemp < wibytemp.sql
 </pre>
-Login to MySQL, create the following accounts and give them the correct access:
+Login to MySQL, create the following accounts and give them the correct access:<br>
 <pre>
 create user 'guest'@'localhost' identified by 'qwer';
 create user 'approver'@'localhost' identified by 'foobar';
 create user 'crawler'@'localhost' identified by 'seekout';
-create user 'remote_guest'@'%' identified by 'd0gemuchw0w';
+create user 'remote_guest'@'localhost' identified by 'd0gemuchw0w';
 use wiby;
 grant select on accounts to 'approver'@'localhost';
 grant select on reviewqueue to 'approver'@'localhost';
@@ -239,11 +239,11 @@ grant select on ws3 to 'crawler'@'localhost';
 grant update on ws3 to 'crawler'@'localhost';
 grant insert on ws3 to 'crawler'@'localhost';
 grant delete on ws3 to 'crawler'@'localhost';
-grant select on windex to 'remote_guest'@'%';
-grant select on ws0 to 'remote_guest'@'%';
-grant select on ws1 to 'remote_guest'@'%';
-grant select on ws2 to 'remote_guest'@'%';
-grant select on ws3 to 'remote_guest'@'%';
+grant select on windex to 'remote_guest'@'localhost';
+grant select on ws0 to 'remote_guest'@'localhost';
+grant select on ws1 to 'remote_guest'@'localhost';
+grant select on ws2 to 'remote_guest'@'localhost';
+grant select on ws3 to 'remote_guest'@'localhost';
 use wibytemp;
 grant select on titlecheck to 'crawler'@'localhost';
 grant insert on titlecheck to 'crawler'@'localhost';
@@ -279,7 +279,8 @@ Also the example file references php7.4-fpm.sock, so if you are using a differen
 <br>
 <h3>Start the Refresh Scheduler</h3>
 This program (rs) will make sure all pages indexed are refreshed at least once per week (or sooner depending on how you assign updates to an individual website). 
-You may want to run this on startup, easiest way to set that is with a cron job (crontab -e). Run './rs -h' to get more parameters.
+You may want to run this on startup, easiest way to set that is with a cron job (crontab -e). Run './rs -h' to get more parameters and info needed to run multiple crawlers. 
+To start manually:  'nohup ./rs' then press ctrl-c.
 <br>
 <br>
 <h3>Start the Crawler</h3>
@@ -300,8 +301,13 @@ You can turn off checking for robots.txt files by commenting out the line callin
 If crawling through hyperlinks on a page, the following file types are accepted: html, htm, xhtml, shtml, txt, php, asp. Links containing parameters are ignored. These limitations do not apply to pages directly submitted by people.
 <br>
 <br>
-<h3>Start the core server</h3>
-You can run the core server on startup with a cron job.
+<h3>Start the Replication Tracker</h3>
+The tracker (rt) should run in the same directory that you will run the core server on. You do not need this if running 1core or the PHP only version. You can use a cron job to run it on startup, or 
+start it manually with this command: 'nohup ./rt' then press ctrl-c.
+<br>
+<br>
+<h3>Start the Core Server</h3>
+You can run the core server on startup with a cron job, or start it manually with this command: 'nohup ./core' then press ctrl-c.
 <br>
 <br>
 If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have at least four available CPU cores. It is recommended you use 'core' as it makes better use of your CPU, but make sure to read the scaling section.
@@ -499,9 +505,9 @@ log_bin = /var/log/mysql/mysql-bin.log
 binlog_do_db = wiby
 binlog_format = mixed
 </pre>
-In MySQL on the primary server, create a user for replica access:
+In MySQL on the primary server, create a user for replica access, replace the IP 10.0.0.% to that for your own VPN IP and allowed subnet:
 <pre>
-create user 'slave_user'@'%' identified by 'd0gemuchw0w';
+create user 'slave_user'@'10.0.0.%' identified by 'd0gemuchw0w';
 GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%';
 FLUSH PRIVILEGES;
 </pre>
@@ -588,7 +594,8 @@ Make sure that:
 Slave_IO_Running: Yes
 Slave_SQL_Running: Yes
 </pre>
-In MySQL on the replica, create the <a name="replicaaccounts">accounts required</a> for the replication tracker and core application:
+In MySQL on the replica, create the <a name="replicaaccounts">accounts required</a> for the replication tracker and core application. 
+Note that the remote_guest account will allow connections from any outside machine. Make sure your replica is protected behind a firewall.<br>
 <pre>
 use wiby;
 create user 'guest'@'localhost' identified by 'qwer';
@@ -602,6 +609,12 @@ grant select on ws3 to 'remote_guest'@'%';
 create user 'crawler'@'localhost' identified by 'seekout';
 FLUSH PRIVILEGES;
 </pre>
+To update the host for any account, do the following:<br>
+<pre>
+use mysql;
+Select user,host from user;
+RENAME USER 'username'@'oldhost' TO 'username'@'newhost';
+</pre>
 <br>
 <a name="create"><b>Creating More Shard Tables</b></a>
 <br>
@@ -614,7 +627,13 @@ Stop the crawler and update the number in the 'shards' file, then copy a shard t
 Make sure to <a href="guide.html#accessshards">give access</a> to the new shard tables.
 <br>
 <br>
-You will need to rebalance the shards, follow the steps below, then restart the crawler. Going forward it will round-robin insert into those shards as new pages are crawled. 
+You will need to <a href="guide.html#balance">rebalance</a> the shards, follow the steps below, then restart the crawler. Going forward it will round-robin insert into those shards as new pages are crawled. 
+<br>
+<br>
+<br>
+<a name="accessshards"><b>Accessing Additional Shards</b></a>
+<br>
+Apply the account access permissions listed <a href="guide.html#replicaaccounts">here</a> for core app and rt access to each replica and <a href="guide.html#accounts">here</a> for crawler access to each new shard table on the primary server or replica hosting the core app. 
 <br>
 <br>
 <br>
@@ -645,11 +664,6 @@ Repeat those steps for each shard table.
 </pre>
 These changes will propagate down to the replicas, and the core application will be able to use them as long as permissions to those tables were added.
 <br>
-<br>
-<br>
-<a name="accessshards"><b>Accessing Additional Shards</b></a>
-<br>
-Apply the account access permissions listed <a href="guide.html#replicaaccounts">here</a> for core app and rt access to each replica and <a href="guide.html#accounts">here</a> for crawler access to each new shard table on the primary server or replica hosting the core app. 
 <br>
 <br>
 <h3>Load Balancing</h3>
