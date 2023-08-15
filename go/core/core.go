@@ -249,9 +249,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryfix := " " + query + " *"
 			query = queryfix
 			queryNoQuotes = queryfix
-			//if len(query) == 1 {
-			//	oneletterquery = 1
-			//}
+			/*if len(query) == 1 {
+				oneletterquery = 1
+			}*/
 		}
 		if query == "c++" || query == "C++" { //shitty but works for now
 			query = "c++ programming"
@@ -330,6 +330,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//Check if query is a url.
 		urlDetected := false
 		isURL := ""
+		isURLlocate := ""
 		if strings.Index(query, " ") == -1 && strings.Index(query, "\"") == -1 && strings.Index(query, ".") > -1 { //note this will also flag on file extensions
 			if len(query) > 6 && (query[0:7] == "http://" || query[0:7] == "HTTP://") {
 				query = query[7:]
@@ -344,6 +345,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			query = "\"" + query + "\""
 			urlDetected = true
 			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes_SQLsafe + "\"' IN BOOLEAN MODE) THEN 25"
+			isURLlocate = "WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', url) THEN 25"
 		}
 
 		//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
@@ -448,7 +450,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < numServers; i++ {
 				idListChans = append(idListChans, make(chan string))
 			}
-			
+
 			for _, server := range servers {
 				serverSettings := strings.Split(server, ",")
 				if len(serverSettings) == 4 { //if line contains all 4 settings
@@ -519,9 +521,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//if all went well with replication servers, send query to master containing idList and use the rangeOffset
 		if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
 			if(exactMatch==false && urlDetected==false && oneword==false){
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryWithQuotesAndFlags + "', tags) THEN 30 " + isURL + " WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) AND LOCATE('" + query + "', title) THEN 20 WHEN LOCATE('" + queryWithQuotesAndFlags + "', body) THEN 19 WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) THEN 16 WHEN LOCATE('" + queryWithQuotesAndFlags + "', description) THEN 15 WHEN LOCATE('" + query + "', title) THEN LOCATE('" + query + "', title) WHEN LOCATE('" + query + "', body) THEN 1 WHEN LOCATE('" + query + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags) THEN 30 " + isURLlocate + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title) AND LOCATE('" + queryNoQuotes_SQLsafe + "', title) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', body) THEN 19 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title) THEN 16 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', description) THEN 15 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title) THEN LOCATE('" + queryNoQuotes_SQLsafe + "', title) WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', body) THEN 1 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 			}else{
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryWithQuotesAndFlags + "', tags) THEN 30 " + isURL + " WHEN LOCATE('" + queryWithQuotesAndFlags + "', title) THEN 20 WHEN LOCATE('" + queryWithQuotesAndFlags + "', body) THEN 19 WHEN LOCATE('" + queryWithQuotesAndFlags + "', description) THEN 15 WHEN LOCATE('" + query + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags) THEN 30 " + isURLlocate + " WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', title) THEN 20 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', body) THEN 19 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', description) THEN 15 WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', url) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 			}
 		} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
 			if(exactMatch==false && urlDetected==false && oneword==false){
@@ -757,7 +759,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				//if all went well with replication servers, send query to local database containing idList and use the rangeOffset
 				if numServers == serverCount && numServers > 0 && repsearchfail == 0 {
-					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + query + "', tags) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
+					sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotes_SQLsafe + "', tags) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 				} else { //else, if no replication servers or there was some sort of error, search the whole local database instead
 					if shards == false{
 						sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""					
