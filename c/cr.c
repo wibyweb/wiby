@@ -386,7 +386,9 @@ int main(int argc, char **argv)
 
 			//check robots.txt file for this domain
 			urlparse(url);
-			permitted = checkrobots(prefix,rootdomain,urlPath);
+			//if(task != 0 && task[0]=='2'){ //enable this statement if you only want to check robots.txt when crawling through hyperlinks, but not on human submissions
+				permitted = checkrobots(prefix,rootdomain,urlPath); //comment this line out if you want to completely disable checking robots.txt
+			//}
 
 			//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
 			if(previousID[0] != -1 && alreadydone==0){
