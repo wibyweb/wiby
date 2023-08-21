@@ -43,16 +43,20 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 
 int main(int argc, char **argv)
 {
-	int id_assigned=0;
-	if(argc == 2 && isnum(argv[1])==1){
+	int id_assigned=0,sleeptime=1;
+	if(argc >= 2 && isnum(argv[1])==1){
 		if(argv[1][0] == 48){
 			printf("When assigning ID's, you must start at 1. Cannot set an id of 0.\n");
 			exit(0);
 		}
 		id_assigned=1;
-	}else if(argc >= 2){
-		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlinks to the 'robots' folder and 'shards' file in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional. Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 0.\n\n");
+	}
+	if((argc >= 2 && isnum(argv[1])==0) || (argc >= 3 && isnum(argv[2])==0) || argc > 3){
+		printf("\nWiby Web Crawler\n\nUsage: cr Crawler_ID Sleep_Time(s)\n\nThe indexqueue may have each page assigned a crawler ID. The ID is assigned when you specify to the Refresh Scheduler the total number of crawlers you are running, and when you update the variable '$num_crawlers' from inside of review.php and graveyard.php (line 73) to the number of crawlers you are using. The scheduler will assign pages in round-robin order a crawler ID within the range of that total.\n\nExample: If you want two crawlers running, then you should specify the first with an ID of 1, and the second with and ID of 2. Run them in separate folders, and provide a symlink to the 'robots' folder and 'shards' file in each. Each crawler will crawl pages in the indexqueue with its corresponding ID.\n\nYou can also not assign an ID, and in that case the crawler will ignore the ID assignments. So if you have only one crawler running, assigning an ID is optional unless you need to change the sleep time (then just use an ID of 1). Don't run multiple crawlers without assigning ID's.\n\nSpecify the total number of shard tables you wish to use in the 'shards' file. The crawler will round-robin insert/update rows in these tables (ws0 to wsX) along with the main 'windex' table. The default is 4.\n\nThe Sleep_Time is 1 second by default but can be set to 0 or higher, and is used when crawling hyperlinks is specified. It inserts a delay between each link that it crawls. This delay is not used between individual pages that were submitted by people.\n\n");
 		exit(0);	
+	}
+	if(argc >= 3){
+		sleeptime = atoi(argv[2]);
 	}
 
 	long int previousID[5] = {0, 1, 2, 3, 4};
@@ -77,7 +81,7 @@ int main(int argc, char **argv)
 			if(fread(shardfilestr, 1, fsize, shardfile)){}
 			shardfilestr[fsize] = 0;
 			for(int i=0;i<fsize;i++){
-				if(shardfilestr[i] > 47 && shardfilestr[i] < 58){
+				if(shardfilestr[i] != 13 && shardfilestr[i] != 10){
 					numshards[i]=shardfilestr[i];
 				}
 			}
@@ -85,13 +89,14 @@ int main(int argc, char **argv)
 			if(isnum(numshards)==1){
 				nShards = atoi(numshards);
 			}else{
-				printf("\nThe shard file must contain a number. Indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
+				printf("The shard file must contain a number. Indicate the number of available shards you are using or set it to 0 if you aren't.\n\n");
 				exit(0);
 			}
 			free(shardfilestr);
 		}
-		if(fsize>10){
-			printf("\nTotal number of shards is too large (10 billion???).");
+		if(fsize>10 || fsize<1){
+			printf("\nTotal number of shards is not specified or too large.\n");
+			exit(0);
 		}
 		fclose(shardfile);
 	}else{
@@ -416,8 +421,8 @@ int main(int argc, char **argv)
 						break;
 					}
 				}
-				if(sanity==1)
-					sleep(1);//do link crawling slowly
+				if(sanity==1 && sleeptime > 0)
+					sleep(sleeptime);//do link crawling slowly, 1 second is default unless specified
 			}
 
 			//if crawling through hyperlinks, doublecheck that this hyperlink hasn't been crawled recently, even if it was redirected elsewhere or failed
@@ -838,10 +843,10 @@ int main(int argc, char **argv)
 					//keywords = (char*)calloc(keywordssize+1,sizeof(char));
 					//description = (char*)calloc(descriptionsize+1,sizeof(char));
 					//page = (char*)calloc(bodysize+1,sizeof(char));
-					windexinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
-					//shardinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
-					windexupdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
-					windexRandUpdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+1001,sizeof(char));
+					windexinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+3001,sizeof(char));
+					//shardinsert = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+3001,sizeof(char));
+					windexupdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+3001,sizeof(char));
+					windexRandUpdate = (char*)calloc(finalURLsize+urlnoprefixcount+bodysize+descriptionsize+keywordssize+titlesize+3001,sizeof(char));
 					titlecheckinsert = (char*)calloc(finalURLsize+titlesize+1001,sizeof(char));
 
 					/*if(title == NULL || keywords == NULL || description == NULL || page == NULL || windexinsert == NULL || windexupdate == NULL)
@@ -1170,7 +1175,8 @@ int main(int argc, char **argv)
 								{
 									finish_with_error(con);
 								}
-								if(nShards>0){//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
+								if(nShards>0){
+									//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
 									//update the shard id in windex
 									memset(windexRandUpdate,0,strlen(windexRandUpdate));
 									strcpy(windexRandUpdate,"UPDATE windex set shard = ");
@@ -1223,8 +1229,6 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate,", updatable = ");
 									strcat(windexRandUpdate,updatable);
 									if(task==0){//didn't come from refresh or link crawling 
-										strcat(windexRandUpdate,", crawl_tree = NULL");
-										strcat(windexRandUpdate,", crawl_family = NULL");
 										strcat(windexRandUpdate,", crawl_pages = ");
 										strcat(windexRandUpdate,crawl_pages);
 										strcat(windexRandUpdate,", crawl_type = ");
@@ -1290,8 +1294,6 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,", updatable = ");
 										strcat(windexRandUpdate,updatable);
 										if(task==0){//didn't come from refresh or link crawling
-											strcat(windexRandUpdate,", crawl_tree = NULL");
-											strcat(windexRandUpdate,", crawl_family = NULL");
 											strcat(windexRandUpdate,", crawl_pages = ");
 											strcat(windexRandUpdate,crawl_pages);
 											strcat(windexRandUpdate,", crawl_type = ");
@@ -1326,8 +1328,8 @@ int main(int argc, char **argv)
 							}																					
 						}
 						if(idexistsalready == 1 || (copiedRandom == 1 && nShards == 0)){ //update an existing entry or a new entry with no shard listed in row
-
-							printf("\nUpdating index... ");
+							if(idexistsalready == 1)
+								printf("\nUpdating index... ");
 							strcat(windexupdate,finalURL);
 							strcat(windexupdate,"', url_noprefix = '");
 							strcat(windexupdate,finalURLnoprefix);
@@ -1362,8 +1364,6 @@ int main(int argc, char **argv)
 							strcat(windexupdate,", updatable = ");
 							strcat(windexupdate,updatable);
 							if(task==0){//didn't come from refresh or link crawling
-								strcat(windexupdate,", crawl_tree = NULL");
-								strcat(windexupdate,", crawl_family = NULL");
 								strcat(windexupdate,", crawl_pages = ");
 								strcat(windexupdate,crawl_pages);
 								strcat(windexupdate,", crawl_type = ");
@@ -1436,8 +1436,6 @@ int main(int argc, char **argv)
 								strcat(windexupdate,", updatable = ");
 								strcat(windexupdate,updatable);
 								if(task==0){//didn't come from refresh or link crawling
-									strcat(windexupdate,", crawl_tree = NULL");
-									strcat(windexupdate,", crawl_family = NULL");
 									strcat(windexupdate,", crawl_pages = ");
 									strcat(windexupdate,crawl_pages);
 									strcat(windexupdate,", crawl_type = ");
@@ -1646,148 +1644,149 @@ int main(int argc, char **argv)
 					while(urlListShuffled[loopcount]!=0){
 						switch(urlListShuffled[loopcount]){
 							case '\n' ://see if url can be indexed, if so, add to sql insert statement
-								urlparse(url_fromlist);
+								if(strlen(url_fromlist) < 500){
+									urlparse(url_fromlist);
 
-								//check if internal or external url
-								int isinternal=1;
-								if(rootdomain[0]!=0){
-									isinternal=0;
-								}else if(url_fromlist[4]==':' || url_fromlist[5]==':'){
-									isinternal=0;
-								}else if((url_fromlist[0]=='w' || url_fromlist[0]=='W') && (url_fromlist[1]=='w' || url_fromlist[1]=='W') && (url_fromlist[2]=='w' || url_fromlist[2]=='W') && url_fromlist[3]=='.'){
-									isinternal=0;
-								}
-								int urlNPNP_finalURL_len=strlen(urlNPNP_finalURL);
-								int isabsolute=0;
-								if(isinternal==0 && urlNPNP_finalURL_len==strlen(urlnopathnoprefix_fromlist)){
-									isinternal=isabsolute=1;
-									for(int q=0;q<urlNPNP_finalURL_len;q++){
-										if(urlnopathnoprefix_fromlist[q]!=urlNPNP_finalURL[q]){
-											isinternal=isabsolute=0;
-											break;
+									//check if internal or external url
+									int isinternal=1;
+									if(rootdomain[0]!=0){
+										isinternal=0;
+									}else if(url_fromlist[4]==':' || url_fromlist[5]==':'){
+										isinternal=0;
+									}else if((url_fromlist[0]=='w' || url_fromlist[0]=='W') && (url_fromlist[1]=='w' || url_fromlist[1]=='W') && (url_fromlist[2]=='w' || url_fromlist[2]=='W') && url_fromlist[3]=='.'){
+										isinternal=0;
+									}
+									int urlNPNP_finalURL_len=strlen(urlNPNP_finalURL);
+									int isabsolute=0;
+									if(isinternal==0 && urlNPNP_finalURL_len==strlen(urlnopathnoprefix_fromlist)){
+										isinternal=isabsolute=1;
+										for(int q=0;q<urlNPNP_finalURL_len;q++){
+											if(urlnopathnoprefix_fromlist[q]!=urlNPNP_finalURL[q]){
+												isinternal=isabsolute=0;
+												break;
+											}
 										}
 									}
-								}
 
-								if(isinternal==1 && ((crawl_type != 0 && crawl_type[0] != '2') || crawl_type == 0)){//is internal link
-									if(url_fromlist[0]=='/' && url_fromlist[1] != '.'){//can't handle '..' otherwise append to insert
-										urls++;
-										if(urls>1){
-											strcat(url_insert,", (");
-										}
-										strcat(url_insert,"'");
-										strcat(url_insert,urlPrefix_finalURL);
-										strcat(url_insert,urlNPNP_finalURL);
-										strcat(url_insert,url_fromlist);
-										strcat(url_insert,"',");
-										strcat(url_insert,worksafe);
-										strcat(url_insert,",'");
-										strcat(url_insert,approver);
-										strcat(url_insert,"',0,2,'");
-										if(task==0){
-											strcat(url_insert,url);
-										}else{
-											strcat(url_insert,crawl_tree);
-										}
-										strcat(url_insert,"','");
-										strcat(url_insert,finalURL);
-										strcat(url_insert,"',");
-										strcat(url_insert,strDepth);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_pages);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_type);
-										strcat(url_insert,",");
-										strcat(url_insert,"0");
-										strcat(url_insert,",");
-										strcat(url_insert,force_rules);
-										if(id_assigned == 1){
-											strcat(url_insert,",");
-											strcat(url_insert,argv[1]);
-										}
-										strcat(url_insert,")");
-									}else if(url_fromlist[0] != '/' && url_fromlist[0] != '.'){
-										urls++;
-										if(urls>1){
-											strcat(url_insert,", (");
-										}
-										strcat(url_insert,"'");
-										if(isabsolute==0){
+									if(isinternal==1 && ((crawl_type != 0 && crawl_type[0] != '2') || crawl_type == 0)){//is internal link
+										if(url_fromlist[0]=='/' && url_fromlist[1] != '.'){//can't handle '..' otherwise append to insert
+											urls++;
+											if(urls>1){
+												strcat(url_insert,", (");
+											}
+											strcat(url_insert,"'");
 											strcat(url_insert,urlPrefix_finalURL);
 											strcat(url_insert,urlNPNP_finalURL);
-											strcat(url_insert,folderPath_finalURL);
-											strcat(url_insert,urlcopy);//scrubed index.html
-										}else{
-											strcat(url_insert,urlcopy);
-										}
-										strcat(url_insert,"',");
-										strcat(url_insert,worksafe);
-										strcat(url_insert,",'");
-										strcat(url_insert,approver);
-										strcat(url_insert,"',0,2,'");
-										if(task==0){
-											strcat(url_insert,url);
-										}else{
-											strcat(url_insert,crawl_tree);
-										}
-										strcat(url_insert,"','");
-										strcat(url_insert,finalURL);
-										strcat(url_insert,"',");
-										strcat(url_insert,strDepth);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_pages);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_type);
-										strcat(url_insert,",");
-										strcat(url_insert,"0");
-										strcat(url_insert,",");
-										strcat(url_insert,force_rules);
-										if(id_assigned == 1){
+											strcat(url_insert,url_fromlist);
+											strcat(url_insert,"',");
+											strcat(url_insert,worksafe);
+											strcat(url_insert,",'");
+											strcat(url_insert,approver);
+											strcat(url_insert,"',0,2,'");
+											if(task==0){
+												strcat(url_insert,url);
+											}else{
+												strcat(url_insert,crawl_tree);
+											}
+											strcat(url_insert,"','");
+											strcat(url_insert,finalURL);
+											strcat(url_insert,"',");
+											strcat(url_insert,strDepth);
 											strcat(url_insert,",");
-											strcat(url_insert,argv[1]);
-										}
-										strcat(url_insert,")");
-									}
-								}else if(isinternal==0 && crawl_type != 0 && crawl_type[0] != '0'){//is external link
-									if(url_fromlist[0] != '.'){
-										urls++;
-										if(urls>1){
-											strcat(url_insert,", (");
-										}
-										strcat(url_insert,"'");
-										strcat(url_insert,prefix_fromlist);
-										strcat(url_insert,rootdomain);
-										strcat(url_insert,urlPath);
-										strcat(url_insert,"',");
-										strcat(url_insert,worksafe);
-										strcat(url_insert,",'");
-										strcat(url_insert,approver);
-										strcat(url_insert,"',0,2,'");
-										if(task==0){
-											strcat(url_insert,url);
-										}else{
-											strcat(url_insert,crawl_tree);
-										}
-										strcat(url_insert,"','");
-										strcat(url_insert,finalURL);
-										strcat(url_insert,"',");
-										strcat(url_insert,strDepth);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_pages);
-										strcat(url_insert,",");
-										strcat(url_insert,crawl_type);
-										strcat(url_insert,",");
-										strcat(url_insert,"0");
-										strcat(url_insert,",");
-										strcat(url_insert,force_rules);
-										if(id_assigned == 1){
+											strcat(url_insert,crawl_pages);
 											strcat(url_insert,",");
-											strcat(url_insert,argv[1]);
+											strcat(url_insert,crawl_type);
+											strcat(url_insert,",");
+											strcat(url_insert,"0");
+											strcat(url_insert,",");
+											strcat(url_insert,force_rules);
+											if(id_assigned == 1){
+												strcat(url_insert,",");
+												strcat(url_insert,argv[1]);
+											}
+											strcat(url_insert,")");
+										}else if(url_fromlist[0] != '/' && url_fromlist[0] != '.'){
+											urls++;
+											if(urls>1){
+												strcat(url_insert,", (");
+											}
+											strcat(url_insert,"'");
+											if(isabsolute==0){
+												strcat(url_insert,urlPrefix_finalURL);
+												strcat(url_insert,urlNPNP_finalURL);
+												strcat(url_insert,folderPath_finalURL);
+												strcat(url_insert,urlcopy);//scrubed index.html
+											}else{
+												strcat(url_insert,urlcopy);
+											}
+											strcat(url_insert,"',");
+											strcat(url_insert,worksafe);
+											strcat(url_insert,",'");
+											strcat(url_insert,approver);
+											strcat(url_insert,"',0,2,'");
+											if(task==0){
+												strcat(url_insert,url);
+											}else{
+												strcat(url_insert,crawl_tree);
+											}
+											strcat(url_insert,"','");
+											strcat(url_insert,finalURL);
+											strcat(url_insert,"',");
+											strcat(url_insert,strDepth);
+											strcat(url_insert,",");
+											strcat(url_insert,crawl_pages);
+											strcat(url_insert,",");
+											strcat(url_insert,crawl_type);
+											strcat(url_insert,",");
+											strcat(url_insert,"0");
+											strcat(url_insert,",");
+											strcat(url_insert,force_rules);
+											if(id_assigned == 1){
+												strcat(url_insert,",");
+												strcat(url_insert,argv[1]);
+											}
+											strcat(url_insert,")");
 										}
-										strcat(url_insert,")");	
-									}									
+									}else if(isinternal==0 && crawl_type != 0 && crawl_type[0] != '0'){//is external link
+										if(url_fromlist[0] != '.'){
+											urls++;
+											if(urls>1){
+												strcat(url_insert,", (");
+											}
+											strcat(url_insert,"'");
+											strcat(url_insert,prefix_fromlist);
+											strcat(url_insert,rootdomain);
+											strcat(url_insert,urlPath);
+											strcat(url_insert,"',");
+											strcat(url_insert,worksafe);
+											strcat(url_insert,",'");
+											strcat(url_insert,approver);
+											strcat(url_insert,"',0,2,'");
+											if(task==0){
+												strcat(url_insert,url);
+											}else{
+												strcat(url_insert,crawl_tree);
+											}
+											strcat(url_insert,"','");
+											strcat(url_insert,finalURL);
+											strcat(url_insert,"',");
+											strcat(url_insert,strDepth);
+											strcat(url_insert,",");
+											strcat(url_insert,crawl_pages);
+											strcat(url_insert,",");
+											strcat(url_insert,crawl_type);
+											strcat(url_insert,",");
+											strcat(url_insert,"0");
+											strcat(url_insert,",");
+											strcat(url_insert,force_rules);
+											if(id_assigned == 1){
+												strcat(url_insert,",");
+												strcat(url_insert,argv[1]);
+											}
+											strcat(url_insert,")");	
+										}									
+									}	
 								}
-
 								memset(url_fromlist,0,url_fromlist_arraylen);
 								elementnum=0;
 								loopcount++;
