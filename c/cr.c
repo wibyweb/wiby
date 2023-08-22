@@ -1176,7 +1176,7 @@ int main(int argc, char **argv)
 									finish_with_error(con);
 								}
 								if(nShards>0){
-									//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
+									//Also copy that new row into a new row in the round-robin assigned shard table
 									//update the shard id in windex
 									memset(windexRandUpdate,0,strlen(windexRandUpdate));
 									strcpy(windexRandUpdate,"UPDATE windex set shard = ");
@@ -1229,6 +1229,8 @@ int main(int argc, char **argv)
 									strcat(windexRandUpdate,", updatable = ");
 									strcat(windexRandUpdate,updatable);
 									if(task==0){//didn't come from refresh or link crawling 
+										strcat(windexRandUpdate,", crawl_tree = NULL");
+										strcat(windexRandUpdate,", crawl_family = NULL");
 										strcat(windexRandUpdate,", crawl_pages = ");
 										strcat(windexRandUpdate,crawl_pages);
 										strcat(windexRandUpdate,", crawl_type = ");
@@ -1294,6 +1296,8 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,", updatable = ");
 										strcat(windexRandUpdate,updatable);
 										if(task==0){//didn't come from refresh or link crawling
+											strcat(windexRandUpdate,", crawl_tree = NULL");
+											strcat(windexRandUpdate,", crawl_family = NULL");
 											strcat(windexRandUpdate,", crawl_pages = ");
 											strcat(windexRandUpdate,crawl_pages);
 											strcat(windexRandUpdate,", crawl_type = ");
@@ -1364,6 +1368,10 @@ int main(int argc, char **argv)
 							strcat(windexupdate,", updatable = ");
 							strcat(windexupdate,updatable);
 							if(task==0){//didn't come from refresh or link crawling
+								if(idexistsalready == 0){
+									strcat(windexupdate,", crawl_tree = NULL");
+									strcat(windexupdate,", crawl_family = NULL");
+								}
 								strcat(windexupdate,", crawl_pages = ");
 								strcat(windexupdate,crawl_pages);
 								strcat(windexupdate,", crawl_type = ");
