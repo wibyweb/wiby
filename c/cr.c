@@ -1176,7 +1176,7 @@ int main(int argc, char **argv)
 									finish_with_error(con);
 								}
 								if(nShards>0){
-									//Also copy that new row into a new row in the round-robin assigned shard table
+									//Also copy that new row into a new row of the same ID in the round-robin assigned shard table
 									//update the shard id in windex
 									memset(windexRandUpdate,0,strlen(windexRandUpdate));
 									strcpy(windexRandUpdate,"UPDATE windex set shard = ");
