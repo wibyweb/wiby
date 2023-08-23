@@ -161,17 +161,6 @@ int main(int argc, char **argv)
 		//get the number of fields (columns) in the table
 		//int num_fields = mysql_num_fields(result);
 
-		//We fetch the rows and print them to the screen. 
-		/*MYSQL_ROW row;
-		  while (row = mysql_fetch_row(result))	
-		  {
-		  for(int i=0; i<num_fields; i++)
-		  {
-		  printf("%s ", row[i] ? row[i] : "NULL");
-		  }
-		  printf("\n");
-		  }*/
-
 		MYSQL_ROW row = mysql_fetch_row(result);
 
 		int empty=0;
