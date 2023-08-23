@@ -469,27 +469,24 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <hr>
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
-You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs.
+You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more full-replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs and available shard tables (ws0 to wsX). Four are already preconfigured.
 <br>
 <br>
 If you have a machine with at least four CPU cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also. By default, four duplicate connections are already set to use your existing machine.
 <br>
 <br>
-The core application checks the replication tracker (rt) output to determine if any replicas are online, it will initiate a connection on those replicas and task each one to search a different section of the index, drastically speeding up search speeds especially for multi-word queries. 
+The core application checks the replication tracker (rt) output to determine if any replicas or duplicate connections are available, it will initiate a connection on those replicas and task each one to search a different shard table, drastically speeding up search speeds. 
 <br>
 <br>
-The search results per page limit is 12, and must evenly divide 'into' OR 'by' the total number of replicas defined in servers.csv. If there is an excess of available replicas such that 
-they do not divide evenly, those will remain in sync but will not be used for searches unless another replica fails. 
+The search results per page limit is 12, and should evenly divide 'into' OR 'by' the total number of replicas/shards defined in servers.csv. You don't need to restart the tracker when editing servers.csv.
+ As an example, if you have three computers with a 4-core CPU on each, you can <a href="guide.html#create">create</a> up to 12 shard tables, then point the tracker to use 4 shards on each computer for maximum use. Another option would be to keep the default four shard and four duplicate connection configuration, host the core application and rt on each computer, and use nginx to load balance traffic between them. 
 <br>
 <br>
 The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
-the replicas are all connected on. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">Here</a> is a tutorial for setting up MySQL replicas, or you can use these quick instructions <a href="guide.html#replica">here</a>.
+the replicas are all connected on. See the <a href="guide.html#replica">instructions</a> to setup a MySQL replica, and <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">here</a> is a longer tutorial on MySQL replicas should you need more info.
 <br>
 <br>
-The scaling method works by having the crawler also store different sections of the 'windex' table into shard tables (ws0 to wsX), and all or some of them can be duplicated on or across replica servers. The servers.csv file includes the corresponding shard table (ws0 to wsX) names to use.
-<br>
-<br>
-Indicate the number of shards in the 'shards' file that the crawler references. Four shard tables are already preconfigured. If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. If for some reason you only want to host a specific shard table on a replica instead, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
+Indicate the number of shards in the 'shards' file that the crawler references (four salready preconfigured). If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. To create more shard tables, see <a href="guide.html#create">this</a> section. If for some reason you only want to host specific shard tables on a replica, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
 <br>
 <br>
 <br>
@@ -667,8 +664,7 @@ These changes will propagate down to the replicas, and the core application will
 <br>
 <br>
 <h3>Load Balancing</h3>
-You should run the core application on one or more of your replicas and have nginx send traffic to it, this way you can reduce the burden on your VPS. The replication tracker (rt) must run on the same server 
-and directory that the core application is running on (not required for 1core).
+You should run the core application on one or more of your replicas and have nginx send traffic to it, this way you can reduce the burden on your VPS. The replication tracker (rt) must run on the same server and directory that the core application is running on (not required for 1core).
 <br>
 <br>
 Add the replica server's VPN address/port to upstream remote_core {} from the default config for nginx (see the provided example template). You can use the VPS as a backup instead by adding 'backup' to its address (eg: server 127.0.0.1:8080 backup;)
