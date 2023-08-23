@@ -1,15 +1,13 @@
 //Wiby Web Crawler
 
-//gcc cr.c -o cr -I/usr/include/mysql -lmysqlclient -lcurl -std=c99 -O3
-//#include </usr/include/mysql/mysql.h>
-#include <mysql.h>
+#include </usr/include/mysql/mysql.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
-#include </usr/include/curl/curl.h> //RHEL/Rocky
-#include </usr/include/curl/easy.h> //RHEL/Rocky
-//#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
-//#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
+//#include </usr/include/curl/curl.h> //RHEL/Rocky
+//#include </usr/include/curl/easy.h> //RHEL/Rocky
+#include </usr/include/x86_64-linux-gnu/curl/curl.h> //ubuntu 20/22
+#include </usr/include/x86_64-linux-gnu/curl/easy.h> //ubuntu 20/22
 #include "htmlparse.h"
 #include "urlparse.h"
 #include "checkrobots.h"
@@ -515,7 +513,7 @@ int main(int argc, char **argv)
 					//size = ftell(fp);
 					//set curl options
 					curl_easy_setopt(curl, CURLOPT_URL, urlHTTP);// set URL to get here 
-					curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; Wibybot; https://wiby.me/)");
+					curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; WebCrawler; SearchEngine)");
 					curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);// send all data to this function  // 
 					curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);// write the page body to this file handle  
 					curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,1L);//allow redirects
