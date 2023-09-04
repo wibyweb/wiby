@@ -158,9 +158,6 @@ int main(int argc, char **argv)
 			finish_with_error(con);
 		}
 
-		//get the number of fields (columns) in the table
-		//int num_fields = mysql_num_fields(result);
-
 		MYSQL_ROW row = mysql_fetch_row(result);
 
 		int empty=0;
@@ -618,11 +615,11 @@ int main(int argc, char **argv)
 							https = 8;
 					}
 					if(finalURLsize > 11){
-						if((finalURL[7]=='w' || finalURL[7]=='W') && (finalURL[8]=='w' || finalURL[8]=='W') && (finalURL[9]=='w' || finalURL[9]=='W') && finalURL[10]=='.' ){
+						if((finalURL[7]=='w' || finalURL[7]=='W') && (finalURL[8]=='w' || finalURL[8]=='W') && ((finalURL[9]=='w' || finalURL[9]=='W') || finalURL[9]=='1' || finalURL[9]=='2' || finalURL[9]=='3') && finalURL[10]=='.' ){
 							httpwww = 11;
 							http = https = 0;
 						}
-						if(finalURL[7]=='/' && (finalURL[8]=='w' || finalURL[8]=='W') && (finalURL[9]=='w' || finalURL[9]=='W') && (finalURL[10]=='w' || finalURL[10]=='W') && finalURL[11]=='.' ){
+						if(finalURL[7]=='/' && (finalURL[8]=='w' || finalURL[8]=='W') && (finalURL[9]=='w' || finalURL[9]=='W') && ((finalURL[9]=='w' || finalURL[9]=='W') || finalURL[9]=='1' || finalURL[9]=='2' || finalURL[9]=='3') && finalURL[11]=='.' ){
 							httpswww = 12;
 							http = https = 0;
 						}
@@ -643,12 +640,12 @@ int main(int argc, char **argv)
 
 					//Double check that the URL is in fact not in the DB, by also searching for the effective URL from libcurl and its url in the table
 					int foundindoublecheck=0;
-					if(idexistsalready == 0){
+					if(idexistsalready == 0){					
 						mysql_free_result(resulturlcheck);
 						char doublecheckurl[finalURLsize+100];
 						memset(doublecheckurl,0,finalURLsize+100);
-						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url,url_noprefix,shard FROM windex WHERE url = '");
-						strcat(doublecheckurl,finalURL);
+						strcpy(doublecheckurl,"SELECT id,updatable,title,enable,fault,url,url_noprefix,shard FROM windex WHERE url_noprefix = '");
+						strcat(doublecheckurl,finalURLnoprefix);
 						strcat(doublecheckurl,"';");
 						if (mysql_query(con, doublecheckurl)) 
 						{
@@ -688,7 +685,7 @@ int main(int argc, char **argv)
 						//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
 						if(previousID[0] != -1){
 							if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
-								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
+								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt\n");
 								exit(0);
 							}
 						}
