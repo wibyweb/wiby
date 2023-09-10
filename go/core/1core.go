@@ -81,7 +81,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	query := ""
 	queryNoQuotes := ""
-	queryNoQuotes_SQLsafe := ""
 
 	offset := "0"
 	page := "0"
@@ -89,7 +88,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//Check if query and page params exist
 	if _, ok := m["q"]; ok {
 		query = strings.Replace(m["q"][0], "'", "''", -1)
-		queryNoQuotes = m["q"][0]
+		queryNoQuotes = query
 	}
 	if _, ok := m["p"]; ok {//gets page num, will convert to offset further down
 		page = strings.Replace(m["p"][0], "'", "''", -1)
@@ -238,16 +237,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			additions = additions + "AND http = '1' "
 		}
 
-		//if query is just 1 or 2 letters, help make it work. Also CIA :D
-		if len(query) < 3 || query == "cia" || query == "CIA" {
-			queryfix := " " + query + " *"
-			query = queryfix
-			queryNoQuotes = queryfix
-		}
-		if query == "c++" || query == "C++" { //shitty but works for now
-			query = "c++ programming"
-		}
-
 		//search if query has quotes and remove them (so we can find the longest word in the query)
 		exactMatch := false
 		//queryNoQuotes := query
@@ -259,18 +248,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			//fmt.Printf("%s \n", queryNoQuotes)
 		}
 
+		//remove the '*' if contained anywhere in queryNoQuotes
+		if strings.Contains(queryNoQuotes, "*") && exactMatch == false {
+			queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+		}
+
 		//Prepare to find longest word in query
 		words := strings.Split(queryNoQuotes, " ")
 		longestWordLength := 0
 		longestWord := ""
 		wordcount := 0
 		longestwordelementnum := 0
-		queryNoQuotesOrFlags := ""
+		queryNoQuotesOrFlags := queryNoQuotes
 		requiredword := ""
 		flags := ""
 		//queryNoFlags := ""
 		//first remove any flags inside var queryNoQuotes, also grab any required words (+ prefix)
 		if strings.Contains(queryNoQuotes, "-") || strings.Contains(queryNoQuotes, "+") {
+			queryNoQuotesOrFlags = ""
 			for i, wordNoFlags := range words {
 				if i > 0 && strings.HasPrefix(wordNoFlags, "-") == false && strings.HasPrefix(wordNoFlags, "+") == false { //add a space after
 					queryNoQuotesOrFlags += " "
@@ -285,7 +280,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					flags += " " + wordNoFlags
 				}
 			}
-			queryNoQuotes = queryNoQuotesOrFlags
 		}
 		//now find longest word
 		words = strings.Split(queryNoQuotes, " ")
@@ -300,18 +294,38 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		//remove the '*' if contained anywhere in queryNoQuotes
-		if strings.Contains(queryNoQuotes, "*") && exactMatch == false {
-			queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+		//create another query where all compatible words are marked as keywords
+		keywordQuery := ""
+		flagssetbyuser := 0
+		wordlen := 0
+		for i, word := range words{
+			wordlen = len(word)
+			if (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
+				flagssetbyuser++
+			}
+			if i==0 && (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
+				keywordQuery += word
+			}
+			if i==0 && (strings.HasPrefix(word, "+") == false && strings.HasPrefix(word, "-") == false) {
+				if wordlen > 2 {
+					keywordQuery += "+"
+				}
+				keywordQuery += word
+			}
+			if i!=0 && (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
+				keywordQuery += " "
+				keywordQuery += word
+			}
+			if i!=0 && (strings.HasPrefix(word, "+") == false && strings.HasPrefix(word, "-") == false) {
+				keywordQuery += " "
+				if wordlen > 2 {
+					keywordQuery += "+"
+				}
+				keywordQuery += word
+			}
 		}
 
-		//get sql safe querynoquotes and flags
-		queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes, "'", "''", -1)
-		flags = strings.Replace(flags, "'", "''", -1)
-		
-		//fmt.Printf("\nquery: %s\nquerynoquotes: %s\nquerynoquotes_sqlsafe: %s\n",query,queryNoQuotes,queryNoQuotes_SQLsafe)
-		//fmt.Fprintf(w,"%s\n%s\n", query,offset)
-		//fmt.Printf("hai\n")
+		//fmt.Printf("\n%s",keywordQuery)
 
 		//get copy of original query because we might have to modify it further
 		queryOriginal := query
@@ -345,18 +359,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			} else if len(query) > 7 && (query[0:8] == "https://" || query[0:8] == "HTTPS://") {
 				query = query[8:]
 			}
-			if len(queryNoQuotes_SQLsafe) > 6 && (queryNoQuotes_SQLsafe[0:7] == "http://" || queryNoQuotes_SQLsafe[0:7] == "HTTP://") {
-				queryNoQuotes_SQLsafe = queryNoQuotes_SQLsafe[7:]
-			} else if len(queryNoQuotes_SQLsafe) > 7 && (queryNoQuotes_SQLsafe[0:8] == "https://" || queryNoQuotes_SQLsafe[0:8] == "HTTPS://") {
-				queryNoQuotes_SQLsafe = queryNoQuotes_SQLsafe[8:]
+			if len(queryNoQuotes) > 6 && (queryNoQuotes[0:7] == "http://" || queryNoQuotes[0:7] == "HTTP://") {
+				queryNoQuotes = queryNoQuotes[7:]
+			} else if len(queryNoQuotes) > 7 && (queryNoQuotes[0:8] == "https://" || queryNoQuotes[0:8] == "HTTPS://") {
+				queryNoQuotes = queryNoQuotes[8:]
 			}
 			query = "\"" + query + "\""
 			urlDetected = true
-			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes_SQLsafe + "\"' IN BOOLEAN MODE) THEN 25"
+			isURL = "WHEN MATCH(url) AGAINST('\"" + queryNoQuotes + "\"' IN BOOLEAN MODE) THEN 25"
 		}
 
 		//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
-		if (strings.Contains(queryNoQuotes_SQLsafe, "-") || strings.Contains(queryNoQuotes_SQLsafe, "+")) && urlDetected == false {
+		if (strings.Contains(queryNoQuotes, "-") || strings.Contains(queryNoQuotes, "+")) && urlDetected == false {
 			hyphenwords := strings.Split(query, " ")
 			query = ""
 			quotes := 0
@@ -372,14 +386,30 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				query += word
 			}
+			//cant use hyphens as required keywords, use regular query instead
+			keywordQuery = query
 		}
 		//fmt.Printf(">%s<\n", query)
-		queryWithQuotesAndFlags := "\"" + queryNoQuotes_SQLsafe + "\"" + flags
+		queryWithQuotesAndFlags := "\"" + queryNoQuotesOrFlags + "\"" + flags
+
+		//if query is just 1 or 2 letters, help make it work. 
+		if utf8.RuneCountInString(queryOriginal) < 3 {
+			queryfix := "" + query + "*"
+			query = queryfix 
+			queryWithQuotesAndFlags = queryfix
+			keywordQuery = queryfix
+		}
+		if queryOriginal == "c++" || query == "C++" {
+			query = "\"c++\" +programming"
+			queryWithQuotesAndFlags = query
+			keywordQuery = query
+		}
+
 		//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
 		var sqlQuery, id, url, title, description, body string
 	
-		if(exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1){
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 16 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN Match(title) AGAINST('" + query + "' IN BOOLEAN MODE) WHEN MATCH(body) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 1 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+		if(exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1 && flagssetbyuser != wordcount){
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}else{
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}
@@ -422,7 +452,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//find query inside body of page
-			if exactMatch == false {
+			if exactMatch == false && flagssetbyuser == 0{
 				/*					//remove the '*' if contained anywhere in query
 									if strings.Contains(queryNoQuotes,"*"){
 										queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
@@ -431,7 +461,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
 					pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
 				} else if pos == -1 {
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
+					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
 				}
 
 				if pos == -1 { //prepare to find position of longest query word (or required word) within body
@@ -454,7 +484,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else { //if exact match, find position of query within body
-				pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
+				pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
 			}
 
 			//still not found?, set position to 0
@@ -537,16 +567,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 		rows.Close()
 		//================================================================================================================================
-		//no results found (count==0), so do a wildcard search (repeat the above process)
+		//no results found (count==0), so do a wildcard search (repeat the above process) - this section will probably be removed, no longer useful
 		addWildcard := false
-		if count == 0 && offset == "0" && urlDetected == false && exactMatch == false {
+		/*if count == 0 && offset == "0" && urlDetected == false && exactMatch == false {
 			addWildcard = true
 			query = strings.Replace(query, "\"", "", -1) //remove some things innodb gets fussy over
 			query = strings.Replace(query, "*", "", -1)
 			query = strings.Replace(query, "'", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "\"", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "*", "", -1)
-			queryNoQuotes_SQLsafe = strings.Replace(queryNoQuotes_SQLsafe, "'", "", -1)
+			queryNoQuotes = strings.Replace(queryNoQuotes, "\"", "", -1)
+			queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+			queryNoQuotes = strings.Replace(queryNoQuotes, "'", "", -1)
 			query = query + "*"
 
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
@@ -583,13 +613,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				//find query inside body of page
 				if exactMatch == false {
 					//remove the '*' if contained anywhere in query
-					/*if strings.Contains(queryNoQuotes,"*"){
-						queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
-					}*/
+					//if strings.Contains(queryNoQuotes,"*"){
+					//	queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
+					//}
 					if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
 						pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
 					} else if pos == -1 {
-						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
+						pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
 					}
 					if pos == -1 { //Not found? prepare to find position of longest query word within body
 						//remove the '*' at the end of the longest word if present
@@ -612,7 +642,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					}
 
 				} else { //if exact match, find position of query within body
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotes))
+					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
 				}
 				//still not found?, set position to 0
 				if pos == -1 {
@@ -696,7 +726,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		//=======================================================================================================================
 		//http://go-database-sql.org/retrieving.html
-
+*/
 		//Close DB
 		db.Close()
 
