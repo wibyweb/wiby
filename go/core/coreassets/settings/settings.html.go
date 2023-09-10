@@ -41,7 +41,6 @@
       cats +tabby (results must contain the word tabby)<br>
       cats -tabby (results must not contain the word tabby)<br>
       "I love you" (use quotes to find an exact match)<br>
-      join* (asterisk finds matches such as join, joins, joining)<br>
       <br>
       !td tornado (find within the frame of one day)<br>
       !tw tornado (find within the frame of one week)<br>
