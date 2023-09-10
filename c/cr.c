@@ -385,7 +385,7 @@ int main(int argc, char **argv)
 			if(previousID[0] != -1 && alreadydone==0){
 				if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
 					sanity = 0;
-					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt");
+					printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt\n\n");
 					exit(0);
 				}else{
 					sanity = 1;
@@ -685,7 +685,7 @@ int main(int argc, char **argv)
 						//Does this crawl attempt, along with the last 4 have the same ID? There is possibly a duplicate db entry, or some other problem.
 						if(previousID[0] != -1){
 							if(previousID[0] == previousID[4] && previousID[0] == previousID[3] && previousID[0] == previousID[2] && previousID[0] == previousID[1]){
-								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt\n");
+								printf("\nWARNING: Last 5 crawl attempts are all for the same page. Will not continue crawling in this situation. Is the same page being submitted over and over? Also, duplicate table entries of the same URL in windex can cause this behavior. Check the database, and duplicates.txt\n\n");
 								exit(0);
 							}
 						}
