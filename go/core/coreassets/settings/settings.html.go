@@ -37,10 +37,10 @@
 	<a href="/about/">About</a>
       </div>
       <p class="pin"><br><br><br><b>Search Options:</b><br><br>
-
-      cats +tabby (results must contain the word tabby)<br>
+      "This is fun" (use quotes to find an exact match)<br>
+      cats +tabby (finds 'cats', but 'tabby' must be found within)<br>
       cats -tabby (results must not contain the word tabby)<br>
-      "I love you" (use quotes to find an exact match)<br>
+      +cats +dogs (both must be found within the document)<br>
       <br>
       !td tornado (find within the frame of one day)<br>
       !tw tornado (find within the frame of one week)<br>
