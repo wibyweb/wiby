@@ -36,7 +36,7 @@ func main() {
 	http.HandleFunc("/surprise/", surprise)
 	http.HandleFunc("/settings/", settings)
 	http.HandleFunc("/settings", settings)
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil)) //set IP to 127.0.0.1 if reverse proxy is on the same machine
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil)) //set IP to localhost if reverse proxy is on the same machine
 }
 
 //https://golang.org/pkg/net/http/#Request
