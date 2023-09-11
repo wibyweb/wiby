@@ -288,7 +288,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		//now find longest word, and build extra locate statements for partial matches (when sorting results returned from replicas)
 		partialLocate := ""
-		locateOrder := 10
+		locateWords := false
 		words = strings.Split(queryNoQuotes, " ")
 		if exactMatch == false {
 			for _, word := range words {
@@ -297,11 +297,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					longestWord = word
 					longestwordelementnum = wordcount
 				}
-				if(wordcount < 5 && len(word) > 3){
-					partialLocate += " WHEN LOCATE('" + word + "', title) THEN " + strconv.Itoa(locateOrder)
-					locateOrder--;			
+				if wordcount < 5 && len(word) > 3{
+					if locateWords == false {
+						partialLocate += " WHEN LOCATE('" + word + "', title) "
+					}else{
+						partialLocate += "OR LOCATE('" + word + "', title) "
+					}
+					locateWords=true			
 				}
 				wordcount++
+			}
+			if locateWords == true{
+				partialLocate += "THEN 10"
 			}
 		}
 		//fmt.Printf("\n%s",partialLocate)
@@ -610,7 +617,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				ids = append(ids,id)
 
 				//find query inside body of page
-				if exactMatch == false {
+				if exactMatch == false && flagssetbyuser == 0{
 					//remove the '*' if contained anywhere in query
 					/*if strings.Contains(queryNoQuotes,"*"){
 						queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
@@ -828,7 +835,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				//find query inside body of page
-				if exactMatch == false {
+				if exactMatch == false && flagssetbyuser == 0{
 
 					if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
 						pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
