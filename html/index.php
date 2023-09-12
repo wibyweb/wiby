@@ -213,7 +213,7 @@ else
 			if ($word[0] != '-' && $word[0] != '+'){
 				$queryNoQuotesOrFlags .= $word;
 			}
-			if ($word[0] == '+' && strlen($word) > 1){
+			if ($word[0] == '+' && strlen($word) > 1 && $requiredword == ''){
 				$requiredword = substr($word,1);
 			}
 			if ($word[0] == '-' || $word[0] == '+'){
@@ -287,7 +287,7 @@ else
 			if(strpos($queryNoQuotes,'"') !== false){
 				$quotes++;
 			}
-			if(((strpos($queryNoQuotes,'-') !== false && $word[0] != '-') || (strpos($queryNoQuotes,'+') !== false && $word[0] != '+')) && $quotes%2 == 0){//if hyphen exists, not a flag, not wrapped in quotes already
+			if(((strpos($word,'-') !== false && $word[0] != '-') || (strpos($word,'+') !== false && $word[0] != '+')) && $quotes%2 == 0){//if hyphen exists, not a flag, not wrapped in quotes already
 				$word = '"' . $word . '"';
 			}
 			if($i > 0){
@@ -296,8 +296,6 @@ else
 			$query .= $word;
 			$i++;
 		}
-		//cant use hyphens as required keywords, use regular query instead
-		$keywordQuery = $query;
 	}	
 	
 	if($filterHTTPS == true){
@@ -324,9 +322,14 @@ else
 		$keywordQuery = $query;
 	}
 
+	$querytouse = $query;
+	if($flagssetbyuser > 0){
+		$querytouse = $keywordQuery;
+	}
+
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
 	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser != $wordcount){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$query' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$keywordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$keywordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}else{
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
@@ -376,7 +379,7 @@ else
 		$count++;
 		$lastID = $row[0];
 		
-		if($exactMatch == false && $flagssetbyuser == 0)
+		if($exactMatch == false && ($flagssetbyuser == 0 || $flagssetbyuser == $wordcount))
 		{
 			//remove the '*' at the end of the longest word if present
 			if(strpos($longestWord,'*') == true)
