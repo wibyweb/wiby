@@ -273,7 +273,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(wordNoFlags, "-") == false && strings.HasPrefix(wordNoFlags, "+") == false {
 					queryNoQuotesOrFlags += wordNoFlags
 				}
-				if strings.HasPrefix(wordNoFlags, "+") == true && len(wordNoFlags) > 1 { //get requiredword
+				if strings.HasPrefix(wordNoFlags, "+") == true && len(wordNoFlags) > 1 && requiredword == "" { //get requiredword
 					requiredword = wordNoFlags[1:len(wordNoFlags)]
 				}
 				if i > 0 && strings.HasPrefix(wordNoFlags, "-") == true || strings.HasPrefix(wordNoFlags, "+") == true {
@@ -386,10 +386,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				query += word
 			}
-			//cant use hyphens as required keywords, use regular query instead
-			keywordQuery = query
 		}
-		//fmt.Printf(">%s<\n", query)
+		//fmt.Printf(">%s<\n", keywordQuery)
 		queryWithQuotesAndFlags := "\"" + queryNoQuotesOrFlags + "\"" + flags
 
 		//if query is just 1 or 2 letters, help make it work. 
@@ -405,11 +403,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			keywordQuery = query
 		}
 
+		querytouse := query
+		if flagssetbyuser > 0{
+			querytouse = keywordQuery
+		}
+
 		//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
 		var sqlQuery, id, url, title, description, body string
 	
 		if(exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1 && flagssetbyuser != wordcount){
-			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + query + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}else{
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}
@@ -452,7 +455,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//find query inside body of page
-			if exactMatch == false && flagssetbyuser == 0{
+			if exactMatch == false && (flagssetbyuser == 0 || flagssetbyuser == wordcount){
 				/*					//remove the '*' if contained anywhere in query
 									if strings.Contains(queryNoQuotes,"*"){
 										queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
@@ -611,7 +614,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				//find query inside body of page
-				if exactMatch == false {
+				if exactMatch == false && (flagssetbyuser == 0 || flagssetbyuser == wordcount){
 					//remove the '*' if contained anywhere in query
 					//if strings.Contains(queryNoQuotes,"*"){
 					//	queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
