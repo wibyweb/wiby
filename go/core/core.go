@@ -289,7 +289,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//now find longest word, and build extra locate statements for partial matches (when sorting results returned from replicas)
 		partialLocate := ""
 		locateWords := false
-		words = strings.Split(queryNoQuotes, " ")
+		words = strings.Split(queryNoQuotesOrFlags, " ")
 		if exactMatch == false {
 			for _, word := range words {
 				if len(word) > longestWordLength {
@@ -314,33 +314,37 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//fmt.Printf("\n%s",partialLocate)
 
 		//create another query where all compatible words are marked as keywords
-		keywordQuery := ""
+		reqwordQuery := ""
 		flagssetbyuser := 0
+		numRequiredWords := 0
 		wordlen := 0
 		for i, word := range words{
 			wordlen = len(word)
 			if (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
 				flagssetbyuser++
+				if strings.HasPrefix(word, "+") == true {
+					numRequiredWords++
+				}
 			}
 			if i==0 && (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
-				keywordQuery += word
+				reqwordQuery += word
 			}
 			if i==0 && (strings.HasPrefix(word, "+") == false && strings.HasPrefix(word, "-") == false) {
 				if wordlen > 2 {
-					keywordQuery += "+"
+					reqwordQuery += "+"
 				}
-				keywordQuery += word
+				reqwordQuery += word
 			}
 			if i!=0 && (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
-				keywordQuery += " "
-				keywordQuery += word
+				reqwordQuery += " "
+				reqwordQuery += word
 			}
 			if i!=0 && (strings.HasPrefix(word, "+") == false && strings.HasPrefix(word, "-") == false) {
-				keywordQuery += " "
+				reqwordQuery += " "
 				if wordlen > 2 {
-					keywordQuery += "+"
+					reqwordQuery += "+"
 				}
-				keywordQuery += word
+				reqwordQuery += word
 			}
 		}
 
@@ -394,6 +398,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		//fmt.Printf(">%s<\n", query)
 
+		//if no required words set, make the longest word in the query required.
+		querywithrequiredword := ""
+		if numRequiredWords == 0 && wordcount > 1 && longestWordLength > 2{
+			querywithrequiredword = query + " +"
+			querywithrequiredword = querywithrequiredword + longestWord
+		}
+
 		//perform full text search FOR InnoDB or MyISAM
 		var sqlQuery, id, url, title, description, body, idList string
 		rangeOffset := 0
@@ -437,17 +448,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryfix := "" + query + "*"
 			query = queryfix 
 			queryWithQuotesAndFlags = queryfix
-			keywordQuery = queryfix
+			reqwordQuery = queryfix
 		}
 		if queryOriginal == "c++" || query == "C++" {
 			query = "\"c++\" +programming"
 			queryWithQuotesAndFlags = query
-			keywordQuery = query
+			reqwordQuery = query
 		}
 
 		querytouse := query
-		if flagssetbyuser > 0{
-			querytouse = keywordQuery
+		if querywithrequiredword != ""{
+			querytouse = querywithrequiredword
+		}else if flagssetbyuser > 0{
+			querytouse = reqwordQuery
+		}else{
+			querytouse = query
 		}
 
 		if noservers == false {
@@ -515,7 +530,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						}*/
 					}else{
 						if(exactMatch==false && urlDetected==false && oneword==false && flagssetbyuser != wordcount){
-							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}else{
 							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}
@@ -567,7 +582,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotesOrFlags + "', tags) THEN 30 " + isURLlocate + " WHEN LOCATE('" + queryNoQuotesOrFlags + "', title) THEN 20 WHEN LOCATE('" + queryNoQuotesOrFlags + "', body) OR LOCATE('" + queryNoQuotesOrFlags + "', description) THEN 15" + partialLocate + " END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 		} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
 			if(exactMatch==false && urlDetected==false && oneword==false && flagssetbyuser != wordcount){
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + keywordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			}else{
 				if(shards==false){//depricated
 					/*sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""*/
