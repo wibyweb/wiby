@@ -226,7 +226,7 @@ else
 	//$queryNoQuotes_SQLsafe = mysqli_real_escape_string($link, $queryNoQuotes);
 	//$flags = mysqli_real_escape_string($link, $flags);
 	
-	$words  = explode(' ', $queryNoQuotes);
+	$words  = explode(' ', $queryNoQuotesOrFlags);
 	if($exactMatch == false)
 	{
 		//find longest word in query	
@@ -235,43 +235,47 @@ else
 		$wordcount = 0;
 		$longestwordelementnum = 0;
 		foreach ($words as $word) {
-		   if (strlen($word) > $longestWordLength) {
-		      $longestWordLength = strlen($word);
-		      $longestWord = $word;
-		      $longestwordelementnum = $wordcount;
-		   }
+			if (strlen($word) > $longestWordLength) {
+				$longestWordLength = strlen($word);
+				$longestWord = $word;
+				$longestwordelementnum = $wordcount;
+			}
 		   $wordcount++;
 		}
 	}
 
 	//create another query where all compatible words are marked as keywords
-	$keywordQuery = '';
+	$reqwordQuery = '';
 	$i=0;
 	$flagssetbyuser=0;
+	$numRequiredWords=0;
 	$wordlen=0;
 	foreach ($words as $word) {
 		$wordlen = strlen($word);
 		if(($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
 			$flagssetbyuser++;
+			if($word[0] == '+'){
+				$numRequiredWords++;
+			}
 		}
 		if($i==0 && ($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
-			$keywordQuery .= "$word";
+			$reqwordQuery .= "$word";
 		}
 		if($i==0 && $word[0] != '+' && $word[0] != '-'){
 			if($wordlen > 2){
-				$keywordQuery .= "+$word";
+				$reqwordQuery .= "+$word";
 			}else{
-				$keywordQuery .= "$word";
+				$reqwordQuery .= "$word";
 			}
 		}
 		if($i!=0 && ($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
-			$keywordQuery .= " $word";
+			$reqwordQuery .= " $word";
 		}		
 		if($i!=0 && $word[0] != '+' && $word[0] != '-' ){
 			if($wordlen > 2){			
-				$keywordQuery .= " +$word";
+				$reqwordQuery .= " +$word";
 			}else{
-				$keywordQuery .= " $word";
+				$reqwordQuery .= " $word";
 			}
 		}
 		$i++;	
@@ -296,7 +300,13 @@ else
 			$query .= $word;
 			$i++;
 		}
-	}	
+	}
+
+	//if no required words set, make the longest word in the query required.
+	$querywithrequiredword = "";
+	if($numRequiredWords == 0 && $wordcount > 1 && $longestWordLength > 2){
+		$querywithrequiredword = $query .= " +$longestWord";
+	}
 	
 	if($filterHTTPS == true){
 		$additions = $additions."AND http = '1' ";
@@ -314,28 +324,31 @@ else
 	if(iconv_strlen($queryOriginal) < 3){
 		$query = "".$query."*";
 		$queryWithQuotesAndFlags = $query;
-		$keywordQuery = $query;
+		$reqwordQuery = $query;
 	}
 	if($queryOriginal == "c++" || $queryOriginal == "C++"){
 		$query = "\"c++\" +programming";
 		$queryWithQuotesAndFlags = $query;
-		$keywordQuery = $query;
+		$reqwordQuery = $query;
 	}
 
-	$querytouse = $query;
-	if($flagssetbyuser > 0){
-		$querytouse = $keywordQuery;
+	if($querywithrequiredword != ""){
+		$querytouse = $querywithrequiredword;
+	}else if($numRequiredWords > 0){
+		$querytouse = $reqwordQuery;
+	}else{
+		$querytouse = $query;
 	}
 
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
 	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser != $wordcount){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$keywordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}else{
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
 
 /*	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser != $wordcount){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$keywordQuery' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$keywordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");*/
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$reqwordQuery' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");*/
 
 	if($urlDetected == 1)
 	{
@@ -504,7 +517,7 @@ else
 		$page++;
 	}
 
-    	include 'results.html.php';    
+   	include 'results.html.php';    
 }    
 
 ?>
