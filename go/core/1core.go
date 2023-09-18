@@ -262,6 +262,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		queryNoQuotesOrFlags := queryNoQuotes
 		requiredword := ""
 		flags := ""
+		flagssetbyuser := 0
+		wordlen := 0
+		numRequiredWords := 0
 		//queryNoFlags := ""
 		//first remove any flags inside var queryNoQuotes, also grab any required words (+ prefix)
 		if strings.Contains(queryNoQuotes, "-") || strings.Contains(queryNoQuotes, "+") {
@@ -278,6 +281,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				if i > 0 && strings.HasPrefix(wordNoFlags, "-") == true || strings.HasPrefix(wordNoFlags, "+") == true {
 					flags += " " + wordNoFlags
+					flagssetbyuser++
+					if strings.HasPrefix(wordNoFlags, "+") == true {
+						numRequiredWords++
+					}
 				}
 			}
 		}
@@ -290,23 +297,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					longestWord = word
 					longestwordelementnum = wordcount
 				}
-				wordcount++
+				if word != ""{
+					wordcount++
+				}
 			}
 		}
 
 		//create another query where all compatible words are marked as keywords
 		reqwordQuery := ""
-		flagssetbyuser := 0
-		numRequiredWords := 0
-		wordlen := 0
 		for i, word := range words{
 			wordlen = len(word)
-			if (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
-				flagssetbyuser++
-				if strings.HasPrefix(word, "+") == true {
-					numRequiredWords++
-				}
-			}
 			if i==0 && (strings.HasPrefix(word, "+") == true || strings.HasPrefix(word, "-") == true) && wordlen > 3{
 				reqwordQuery += word
 			}
@@ -328,6 +328,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				reqwordQuery += word
 			}
 		}
+		reqwordQuery += flags
 
 		//fmt.Printf("\n%s",reqwordQuery)
 
@@ -394,7 +395,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 		//if no required words set, make the longest word in the query required.
 		querywithrequiredword := ""
-		if flagssetbyuser == 0 && wordcount > 1 && longestWordLength > 2{
+		if numRequiredWords == 0 && wordcount > 1 && longestWordLength > 2{
 			querywithrequiredword = query + " +"
 			querywithrequiredword = querywithrequiredword + longestWord
 		}		
@@ -409,10 +410,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			queryWithQuotesAndFlags = queryfix
 			reqwordQuery = queryfix
 		}
-		if queryOriginal == "c++" || query == "C++" {
-			query = "\"c++\" +programming"
-			queryWithQuotesAndFlags = query
-			reqwordQuery = query
+		if strings.Contains(queryOriginal,"c++")==true || strings.Contains(queryOriginal,"C++")==true{ // :) :( :) :(
+			exactMatch=true
+			queryWithQuotesAndFlags += " +programming"
+			if strings.Contains(queryOriginal," ")==true && longestWordLength>3{
+				queryWithQuotesAndFlags += " +"
+				queryWithQuotesAndFlags += longestWord
+			}
 		}
 
 		querytouse := query
@@ -420,19 +424,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			querytouse = querywithrequiredword
 		}else if numRequiredWords > 0{
 			querytouse = reqwordQuery
-		}else{
-			querytouse = query
 		}
 
 		//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
 		var sqlQuery, id, url, title, description, body string
 	
-		if(exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1 && flagssetbyuser != wordcount){
+		if exactMatch==false && urlDetected==false && strings.Index(query, " ") != -1 && flagssetbyuser + wordcount != flagssetbyuser{
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}else{
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 		}
-		
 		rows, err := db.Query(sqlQuery)
 		//fmt.Printf("\n%s\n",sqlQuery)
 		if err != nil {
@@ -471,7 +472,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//find query inside body of page
-			if exactMatch == false && (flagssetbyuser == 0 || flagssetbyuser == wordcount){
+			if exactMatch == false && (numRequiredWords == 0 || numRequiredWords + wordcount == numRequiredWords){
 				/*					//remove the '*' if contained anywhere in query
 									if strings.Contains(queryNoQuotes,"*"){
 										queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
@@ -630,7 +631,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				//find query inside body of page
-				if exactMatch == false && (flagssetbyuser == 0 || flagssetbyuser == wordcount){
+				if exactMatch == false && (numRequiredWords == 0 || numRequiredWords + wordcount == numRequiredWords){
 					//remove the '*' if contained anywhere in query
 					//if strings.Contains(queryNoQuotes,"*"){
 					//	queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
