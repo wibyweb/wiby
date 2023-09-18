@@ -202,11 +202,15 @@ else
 	$queryNoQuotesOrFlags = $queryNoQuotes;
 	$requiredword = '';
 	$flags = '';
+	$wordlen = 0;
+	$flagssetbyuser = 0;
+	$numRequiredWords = 0;
 	if(strpos($queryNoQuotes,'+') !== false || strpos($queryNoQuotes,'-') !== false){
 		$words = explode(' ', $queryNoQuotes);	
 		$i = 0;
 		$queryNoQuotesOrFlags = '';
 		foreach ($words as $word) {
+			$wordlen = strlen($word);
 			if($i != 0 && $word[0] != '-' && $word[0] != '+'){
 				$queryNoQuotesOrFlags .= ' ';
 			}			
@@ -218,7 +222,11 @@ else
 			}
 			if ($word[0] == '-' || $word[0] == '+'){
 				$flags .= " $word";
-			}			
+				$flagssetbyuser++;
+				if($word[0] == '+'){
+					$numRequiredWords++;
+				}
+			}
 			$i++;
 		}
 	}
@@ -240,24 +248,18 @@ else
 				$longestWord = $word;
 				$longestwordelementnum = $wordcount;
 			}
-		   $wordcount++;
+			if($word != ''){
+				$wordcount++;
+			}
 		}
 	}
 
-	//create another query where all compatible words are marked as keywords
+	//create another query where all compatible words from queryNoQuotesOrFlags are marked as keywords
 	$reqwordQuery = '';
 	$i=0;
-	$flagssetbyuser=0;
-	$numRequiredWords=0;
 	$wordlen=0;
 	foreach ($words as $word) {
 		$wordlen = strlen($word);
-		if(($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
-			$flagssetbyuser++;
-			if($word[0] == '+'){
-				$numRequiredWords++;
-			}
-		}
 		if($i==0 && ($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
 			$reqwordQuery .= "$word";
 		}
@@ -280,6 +282,7 @@ else
 		}
 		$i++;	
 	}
+	$reqwordQuery .= " $flags";
 
 	//Check if query contains a hyphenated word. MySQL is finicky about them. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
 	if((strpos($queryNoQuotes,'-') !== false || strpos($queryNoQuotes,'+') !== false) && $urlDetected == false){
@@ -326,10 +329,12 @@ else
 		$queryWithQuotesAndFlags = $query;
 		$reqwordQuery = $query;
 	}
-	if($queryOriginal == "c++" || $queryOriginal == "C++"){
-		$query = "\"c++\" +programming";
-		$queryWithQuotesAndFlags = $query;
-		$reqwordQuery = $query;
+	if(stripos($queryOriginal,"c++")!==false){// :) :( :) :(
+		$exactMatch=true;
+		$queryWithQuotesAndFlags .= " +programming";
+		if(strpos($queryOriginal," ")!==false && $longestWordLength>3){
+			$queryWithQuotesAndFlags .= " +$longestWord";
+		}
 	}
 
 	if($querywithrequiredword != ""){
@@ -341,13 +346,13 @@ else
 	}
 
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser != $wordcount){
+	if($exactMatch !== true && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $flagssetbyuser){
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}else{
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
 
-/*	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser != $wordcount){
+/*	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $wordcount){
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$reqwordQuery' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");*/
 
 	if($urlDetected == 1)
@@ -391,14 +396,14 @@ else
 		$body = $row[4];
 		$count++;
 		$lastID = $row[0];
-		
-		if($exactMatch == false && ($flagssetbyuser == 0 || $flagssetbyuser == $wordcount))
+
+		$longestWord = str_replace("\'\'", "\'",$longestWord);
+		$queryNoQuotesOrFlags = str_replace("\'\'", "\'",$queryNoQuotesOrFlags);
+
+		if($exactMatch == false && ($numRequiredWords == 0 || $numRequiredWords + $wordcount == $numRequiredWords))
 		{
 			//remove the '*' at the end of the longest word if present
-			if(strpos($longestWord,'*') == true)
-			{
-				$longestWord = str_replace('*', "",$longestWord);
-			}
+			$longestWord = str_replace('*', "",$longestWord);
 
 			//first find an exact
 			if(strlen($requiredword) > 0){
@@ -414,9 +419,9 @@ else
 				{
 					if($longestwordelementnum > 0)
 					{
-						if(strpos($words[0],'*') == true)//remove the '*' at the end of the query if present
-							$words[0] = str_replace('*', "",$words[0]);					
-						$pos = stripos($body, $words[0]);
+						if(strpos($words[longestwordelementnum],'*') == true)//remove the '*' at the end of the query if present
+							$words[longestwordelementnum] = str_replace('*', "",$words[0]);					
+						$pos = stripos($body, $words[longestwordelementnum]);
 					}
 					else if($longestwordelementnum == 0)
 					{
