@@ -1257,7 +1257,7 @@ int main(int argc, char **argv)
 										strcat(windexRandUpdate,finalURLnoprefix);
 										strcat(windexRandUpdate,"', title = '");
 										if(titlesize > 0 && emptytitle == 0){
-											strcat(windexRandUpdate,title);
+											strcat(windexRandUpdate,title_filtered);
 										}
 										else{
 											if(finalURLsize < 111){
@@ -1268,9 +1268,9 @@ int main(int argc, char **argv)
 											}
 										}
 										strcat(windexRandUpdate,"', tags = NULL, description = '");
-										strcat(windexRandUpdate,description);
+										strcat(windexRandUpdate,description_filtered);
 										strcat(windexRandUpdate,"', body = '");
-										strcat(windexRandUpdate,body);	
+										strcat(windexRandUpdate,body_filtered);	
 										strcat(windexRandUpdate,"', worksafe = ");
 										strcat(windexRandUpdate,worksafe);
 										strcat(windexRandUpdate,", approver = '");
@@ -1404,7 +1404,7 @@ int main(int argc, char **argv)
 								strcat(windexupdate,finalURLnoprefix);
 								strcat(windexupdate,"', title = '");
 								if(titlesize > 0 && emptytitle == 0){
-									strcat(windexupdate,title);
+									strcat(windexupdate,title_filtered);
 								}
 								else{
 									if(finalURLsize < 111){
@@ -1419,9 +1419,9 @@ int main(int argc, char **argv)
 								else{
 									strcat(windexupdate,"', tags = NULL, description = '");
 								}
-								strcat(windexupdate,description);
+								strcat(windexupdate,description_filtered);
 								strcat(windexupdate,"', body = '");
-								strcat(windexupdate,body);	
+								strcat(windexupdate,body_filtered);	
 								strcat(windexupdate,"', worksafe = ");
 								strcat(windexupdate,worksafe);
 								//strcat(windexupdate,", approver = '");

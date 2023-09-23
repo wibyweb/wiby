@@ -24,6 +24,7 @@ static char filename[] = "page.out";
 
 char window[window_len],windowWithSpaces[window_len],charset[charset_len+1],mysqlcharset[mysqlcharset_len+1],title[title_len+1],keywords[keywords_len+1],description[description_len+1],robots[robots_len+1],body[body_len+1];
 char urlList[urlList_len+1],strURL[strURL_len+1],urlListShuffled[urlList_len+1],urlListHoldShuffled[urlList_len+1];
+char title_filtered[title_len+1], body_filtered[body_len+1], description_filtered[description_len+1];
 int titlefound=0,charsetfound=0,descriptionfound=0,keywordsfound=0,robotsfound=0,nofollow=0,noindex=0,scriptfound=0,stylefound=0,urlFound=0,urlTagFound=0,numURL=0,emptytitle=1,spaces=0,seeded=0,num_stylesheets=0,num_scripts=0,getURLs=1;
 long charsetsize=0,titlesize=0,keywordssize=0,descriptionsize=0,robotssize=0,bodysize=0;
 
@@ -34,6 +35,7 @@ int canCrawl(int urlSize, char *urltocheck);
 void shuffleURLs(int iterations, long urlListSize);
 void sqlsafe();
 void charset2mysql();
+void filtervars();
 
 FILE *f;
 char *fileStr;
@@ -62,6 +64,9 @@ void htmlparse(){
 	memset(strURL,0,strURL_len+1);
 	memset(urlListShuffled,0,urlList_len+1);
 	memset(urlListHoldShuffled,0,urlList_len+1);
+	memset(title_filtered,0,title_len+1);
+	memset(body_filtered,0,body_len+1);
+	memset(description_filtered,0,description_len+1);	
 	printf("Parsing HTML... ");
 
 	//open html file and load into memory
@@ -311,6 +316,9 @@ void htmlparse(){
 	
 	//Convert charset to mysql equivalent
 	charset2mysql();
+	
+	//Filter additional characters *if* required
+	filtervars();	
 	
 	//print body to file
 /*	bodyfile = fopen("body.txt","wb");
@@ -575,4 +583,37 @@ int canCrawl(int urlSize, char *urltocheck){
 	if(extfound==0 )
 		return 1;
 	return 0;
+}
+
+void filtervars(){
+	//Creates a copy of title, description, body variables with single-qutoes filtered out
+	//will be used for the shard tables, but not on the primary 'windex' table
+	//allows a more restrictive query to be used. Is agnostic to searches containing single-quotes as a compromise
+
+	//filter title
+	int j=0;
+	for(int i=0;i<titlesize;i++){
+			if(title[i]!=39){
+				title_filtered[j]=title[i];
+				j++;
+			}
+	}
+	
+	//filter description
+	j=0;
+	for(int i=0;i<descriptionsize;i++){
+			if(description[i]!=39){
+				description_filtered[j]=description[i];
+				j++;
+			}
+	}
+	
+	//filter body
+	j=0;
+	for(int i=0;i<bodysize;i++){
+			if(body[i]!=39){
+				body_filtered[j]=body[i];
+				j++;
+			}
+	}
 }
