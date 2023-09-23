@@ -294,8 +294,8 @@ If using more than one crawler, update the variable '$num_crawlers' from inside 
 Note that you may need to change the crawler's user-agent (CURLOPT_USERAGENT in cr.c and checkrobots.h) if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
 <br> 
 <br>
-Make sure the robots folder exists. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. 
-You can turn off checking for robots.txt files by commenting out the line calling the "checkrobots" function inside of cr.c.
+Make sure the robots folder exists. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. You can also create custom robots.txt files for specific domains and store them there for the crawler to reference.
+To disable checking for robots.txt files, comment out the line calling the "checkrobots" function inside of cr.c.
 <br>
 <br>
 If crawling through hyperlinks on a page, the following file types are accepted: html, htm, xhtml, shtml, txt, php, asp. Links containing parameters are ignored. These limitations do not apply to pages directly submitted by people.
