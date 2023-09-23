@@ -466,6 +466,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}else if numRequiredWords > 0{
 			querytouse = reqwordQuery
 		}
+		reqwordQuery_filtered := strings.Replace(reqwordQuery, "'", "", -1)
+		//For a less restrictive search, replace only the first instance of reqwordQuery_filtered with querytouse_filtered in the SQL query used when calling the distributedQuery go routine
+		querytouse_filtered := strings.Replace(querytouse, "'", "", -1)
+		queryWithQuotesAndFlags_filtered := strings.Replace(queryWithQuotesAndFlags, "'", "", -1)
 
 		if noservers == false {
 			//send query to go routines.
@@ -532,9 +536,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 						}*/
 					}else{
 						if(exactMatch==false && urlDetected==false && oneword==false && flagssetbyuser + wordcount != flagssetbyuser){
-							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse_filtered + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}else{
-							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}
 					}
 					go distributedQuery(sqlString, sqlQuery, startID, endID, idListChans[serverCount])
