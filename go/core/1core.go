@@ -458,6 +458,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		count := 0
+		wordtocheck := ""
+		stringtofind := strings.ToLower(queryNoQuotesOrFlags)
+		stringtofind = strings.Replace(stringtofind, "''", "'", -1)
+		requiredwordtofind := strings.ToLower(requiredword)
+		requiredwordtofind = strings.Replace(requiredwordtofind, "''", "'", -1)
+		longestWordtofind := strings.ToLower(longestWord)
+		longestWordtofind = strings.Replace(longestWordtofind, "''", "'", -1)
 
 		for rows.Next() {
 			count++
@@ -473,38 +480,30 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 			//find query inside body of page
 			if exactMatch == false && (numRequiredWords == 0 || numRequiredWords + wordcount == numRequiredWords){
-				/*					//remove the '*' if contained anywhere in query
-									if strings.Contains(queryNoQuotes,"*"){
-										queryNoQuotes = strings.Replace(queryNoQuotes, "*", "", -1)
-									}	*/
-
 				if len(requiredword) > 0 { //search for position of required word if any, else search for position of whole query
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(requiredword))
+					pos = strings.Index(strings.ToLower(body), requiredwordtofind)
 				} else if pos == -1 {
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
+					pos = strings.Index(strings.ToLower(body), stringtofind)
 				}
 
-				if pos == -1 { //prepare to find position of longest query word (or required word) within body
-					//remove the '*' at the end of the longest word if present
-					if strings.Contains(longestWord, "*") {
-						longestWord = strings.Replace(longestWord, "*", "", -1)
-					}
-					//search within body for position of longest query word.
-					pos = strings.Index(strings.ToLower(body), strings.ToLower(longestWord))
-					//not found?, set position to a different word, make sure there's no wildcard on it
+				if pos == -1 { //not found? find position of longest query word 
+					pos = strings.Index(strings.ToLower(body), longestWordtofind)
+					//not found?, set position to a different word
 					if pos == -1 && wordcount > 1 {
 						if longestwordelementnum > 0 {
-							words[0] = strings.Replace(words[0], "*", "", -1)
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(words[0]))
+							//wordtocheck = strings.Replace(words[0], "*", "", -1)
+							wordtocheck = strings.Replace(words[0], "''", "'", -1)
+							pos = strings.Index(strings.ToLower(body), strings.ToLower(wordtocheck))
 						}
 						if longestwordelementnum == 0 {
-							words[1] = strings.Replace(words[1], "*", "", -1)
-							pos = strings.Index(strings.ToLower(body), strings.ToLower(words[1]))
+							//wordtocheck = strings.Replace(words[1], "*", "", -1)
+							wordtocheck = strings.Replace(words[1], "''", "'", -1)
+							pos = strings.Index(strings.ToLower(body), strings.ToLower(wordtocheck))
 						}
 					}
 				}
 			} else { //if exact match, find position of query within body
-				pos = strings.Index(strings.ToLower(body), strings.ToLower(queryNoQuotesOrFlags))
+				pos = strings.Index(strings.ToLower(body), stringtofind)
 			}
 
 			//still not found?, set position to 0
