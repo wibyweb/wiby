@@ -397,13 +397,13 @@ else
 		$count++;
 		$lastID = $row[0];
 
-		$longestWord = str_replace("\'\'", "\'",$longestWord);
-		$queryNoQuotesOrFlags = str_replace("\'\'", "\'",$queryNoQuotesOrFlags);
+		$longestWord = str_replace("''", "'",$longestWord);
+		$queryNoQuotesOrFlags = str_replace("''", "'",$queryNoQuotesOrFlags);
 
 		if($exactMatch == false && ($numRequiredWords == 0 || $numRequiredWords + $wordcount == $numRequiredWords))
 		{
 			//remove the '*' at the end of the longest word if present
-			$longestWord = str_replace('*', "",$longestWord);
+			//$longestWord = str_replace('*', "",$longestWord);
 
 			//first find an exact
 			if(strlen($requiredword) > 0){
@@ -419,14 +419,14 @@ else
 				{
 					if($longestwordelementnum > 0)
 					{
-						if(strpos($words[longestwordelementnum],'*') == true)//remove the '*' at the end of the query if present
-							$words[longestwordelementnum] = str_replace('*', "",$words[0]);					
+						//if(strpos($words[longestwordelementnum],'*') == true)//remove the '*' at the end of the query if present
+							//$words[longestwordelementnum] = str_replace('*', "",$words[0]);					
 						$pos = stripos($body, $words[longestwordelementnum]);
 					}
 					else if($longestwordelementnum == 0)
 					{
-						if(strpos($words[1],'*') == true)//remove the '*' at the end of the query if present
-							$words[1] = str_replace('*', "",$words[1]);				
+						//if(strpos($words[1],'*') == true)//remove the '*' at the end of the query if present
+							//$words[1] = str_replace('*', "",$words[1]);				
 						$pos = stripos($body, $words[1]);
 					}		
 				}
