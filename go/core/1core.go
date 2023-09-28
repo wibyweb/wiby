@@ -87,11 +87,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	//Check if query and page params exist
 	if _, ok := m["q"]; ok {
-		query = strings.Replace(m["q"][0], "'", "''", -1)
+		query = m["q"][0]
+		query = strings.Replace(query, "'", "''", -1)
+		query = strings.Replace(query, "+ ", " ", -1)
+		query = strings.Replace(query, "- ", " ", -1)
 		queryNoQuotes = query
 	}
 	if _, ok := m["p"]; ok {//gets page num, will convert to offset further down
-		page = strings.Replace(m["p"][0], "'", "''", -1)
+		page = m["p"][0]
+		page = strings.Replace(page, "'", "''", -1)
 		offset = page
 	}
 
