@@ -469,7 +469,7 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <hr>
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
-You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to eachother, run the core application AND replication tracker (rt) on one or more full-replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs and available shard tables (ws0 to wsX). Four are already preconfigured.
+You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to each other, run the core application AND replication tracker (rt) on one or more full-replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs and available shard tables (ws0 to wsX). Four are already preconfigured.
 <br>
 <br>
 If you have a machine with at least four CPU cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also. By default, four duplicate connections are already set to use your existing machine.
@@ -486,7 +486,7 @@ The reverse proxy and replica servers can be connected through a VPN such as wir
 the replicas are all connected on. See the <a href="guide.html#replica">instructions</a> to setup a MySQL replica, and <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">here</a> is a longer tutorial on MySQL replicas should you need more info.
 <br>
 <br>
-Indicate the number of shards in the 'shards' file that the crawler references (four salready preconfigured). If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. To create more shard tables, see <a href="guide.html#create">this</a> section. If for some reason you only want to host specific shard tables on a replica, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
+Indicate the number of shards in the 'shards' file that the crawler references (four are already preconfigured). If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. To create more shard tables, see <a href="guide.html#create">this</a> section. If for some reason you only want to host specific shard tables on a replica, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
 <br>
 <br>
 <br>
