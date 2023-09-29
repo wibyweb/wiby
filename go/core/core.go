@@ -382,26 +382,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			isURLlocate = "WHEN LOCATE('" + queryNoQuotesOrFlags + "', url) THEN 25"
 		}
 
-		//Check if query contains a hyphenated word. Will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
-		if (strings.Contains(queryNoQuotes, "-") || strings.Contains(queryNoQuotes, "+")) && urlDetected == false {
-			hyphenwords := strings.Split(query, " ")
-			query = ""
-			quotes := 0
-			for i, word := range hyphenwords {
-				if strings.Contains(word, "\"") {
-					quotes++
-				}
-				if ((strings.Contains(word, "-") && word[0] != '-') || (strings.Contains(word, "+") && word[0] != '+')) && quotes%2 == 0 { //if hyphen or plus exists, not a flag, not wrapped in quotes already
-					word = "\"" + word + "\""
-				}
-				if i > 0 {
-					query += " "
-				}
-				query += word
-			}
-		}
-		//fmt.Printf(">%s<\n", query)
-
 		//if no required words set, make the longest word in the query required.
 		querywithrequiredword := ""
 		if numRequiredWords == 0 && wordcount > 1 && longestWordLength > 2{
@@ -599,7 +579,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE id IN (" + idList + ") AND enable = '1' " + additions + "ORDER BY CASE WHEN LOCATE('" + queryNoQuotesOrFlags + "', tags) THEN 30 " + isURLlocate + " WHEN LOCATE('" + queryNoQuotesOrFlags + "', title) THEN 20 WHEN LOCATE('" + queryNoQuotesOrFlags + "', body) OR LOCATE('" + queryNoQuotesOrFlags + "', description) THEN 15" + partialLocate + " END DESC, id DESC LIMIT " + lim + " OFFSET " + strconv.Itoa(rangeOffset) + ""
 		} else { //else, if no replication servers or there was some sort of error, just search the database locally instead
 			if(exactMatch==false && urlDetected==false && oneword==false && flagssetbyuser + wordcount != flagssetbyuser){
-				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
+				sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('" + querytouse + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotes + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotes + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotes + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotes + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""
 			}else{
 				if(shards==false){//depricated
 					/*sqlQuery = "SELECT id, url, title, description, body FROM windex WHERE enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + lim + " OFFSET " + offset + ""*/
