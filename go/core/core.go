@@ -94,7 +94,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if _, ok := m["q"]; ok {
 		query = m["q"][0]
 		query = strings.Replace(query, "'", "''", -1)
-		query = strings.Replace(query, "+ ", " ", -1)
 		query = strings.Replace(query, "- ", " ", -1)
 		queryNoQuotes = query
 	}
@@ -251,9 +250,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//queryNoQuotes := query
 		if strings.Contains(query, "\"") {
 			exactMatch = true
-			queryNoQuotes = strings.TrimLeft(queryNoQuotes, "\"")
-			getlastquote := strings.Split(queryNoQuotes, "\"")
-			queryNoQuotes = getlastquote[0]
+			queryNoQuotes = strings.Replace(queryNoQuotes, "\"", "", -1)
 			//fmt.Printf("%s \n", queryNoQuotes)
 		}
 
@@ -275,6 +272,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		wordlen := 0
 		numRequiredWords := 0
 		//queryNoFlags := ""
+
 		//first remove any flags inside var queryNoQuotes, also grab any required words (+ prefix)
 		if strings.Contains(queryNoQuotes, "-") || strings.Contains(queryNoQuotes, "+") {
 			queryNoQuotesOrFlags = ""
@@ -296,34 +294,34 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+			flags = checkformat(flags)
 		}
 		//now find longest word, and build extra locate statements for partial matches (when sorting results returned from replicas)
 		partialLocate := ""
 		locateWords := false
 		words = strings.Split(queryNoQuotesOrFlags, " ")
-		if exactMatch == false {
-			for _, word := range words {
-				if len(word) > longestWordLength {
-					longestWordLength = len(word)
-					longestWord = word
-					longestwordelementnum = wordcount
-				}
-				if wordcount < 5 && len(word) > 3{
-					if locateWords == false {
-						partialLocate += " WHEN LOCATE('" + word + "', title) "
-					}else{
-						partialLocate += "OR LOCATE('" + word + "', title) "
-					}
-					locateWords=true			
-				}
-				if word != ""{
-					wordcount++
-				}
+		for _, word := range words {
+			if len(word) > longestWordLength {
+				longestWordLength = len(word)
+				longestWord = word
+				longestwordelementnum = wordcount
 			}
-			if locateWords == true{
-				partialLocate += "THEN 10"
+			if wordcount < 5 && len(word) > 3{
+				if locateWords == false {
+					partialLocate += " WHEN LOCATE('" + word + "', title) "
+				}else{
+					partialLocate += "OR LOCATE('" + word + "', title) "
+				}
+				locateWords=true			
+			}
+			if word != ""{
+				wordcount++
 			}
 		}
+		if locateWords == true{
+			partialLocate += "THEN 10"
+		}
+
 		//fmt.Printf("\n%s",partialLocate)
 
 		//create another query where all compatible words are marked as keywords
@@ -350,6 +348,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				reqwordQuery += word
 			}
+			reqwordQuery = checkformat(reqwordQuery)
 		}
 		reqwordQuery += flags
 
@@ -447,6 +446,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}*/
 
 		queryWithQuotesAndFlags := "\"" + queryNoQuotesOrFlags + "\"" + flags
+		queryWithQuotes := "\"" + queryNoQuotesOrFlags + "\""
 
 		//if query is just 1 or 2 letters, help make it work. 
 		if utf8.RuneCountInString(queryOriginal) < 3 {
@@ -470,10 +470,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}else if numRequiredWords > 0{
 			querytouse = reqwordQuery
 		}
+
+		if exactMatch == false && urlDetected == false {
+			querytouse = checkformat(querytouse)
+			reqwordQuery = checkformat(reqwordQuery)
+		}
+
 		reqwordQuery_filtered := strings.Replace(reqwordQuery, "'", "", -1)
 		//For a less restrictive search, replace only the first instance of reqwordQuery_filtered with querytouse_filtered in the SQL query used when calling the distributedQuery go routine
 		querytouse_filtered := strings.Replace(querytouse, "'", "", -1)
 		queryWithQuotesAndFlags_filtered := strings.Replace(queryWithQuotesAndFlags, "'", "", -1)
+		queryWithQuotes_filtered := strings.Replace(queryWithQuotes, "'", "", -1)
 
 		if noservers == false {
 			//send query to go routines.
@@ -539,8 +546,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 							sqlQuery = "SELECT id FROM windex WHERE id BETWEEN " + startID + " AND " + endID + " AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 19 WHEN MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(url) AGAINST('" + query + "' IN BOOLEAN MODE) THEN 0 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}*/
 					}else{
-						if(exactMatch==false && urlDetected==false && oneword==false && flagssetbyuser + wordcount != flagssetbyuser){
-							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotesAndFlags + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse_filtered + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
+						if (exactMatch==false || flagssetbyuser > 0) && urlDetected==false && strings.Index(query, " ") != -1 && flagssetbyuser + wordcount != flagssetbyuser{
+							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotes_filtered + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotes_filtered + "' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('" + queryWithQuotes_filtered + "' IN BOOLEAN MODE) OR MATCH(description) AGAINST('" + queryWithQuotes_filtered + "' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('" + reqwordQuery_filtered + "' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('" + querytouse_filtered + "' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}else{
 							sqlQuery = "SELECT id FROM " + shard + " WHERE MATCH(tags, body, description, title, url) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) AND enable = '1' " + additions + "ORDER BY CASE WHEN MATCH(tags) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) THEN 30 " + isURL + " WHEN MATCH(title) AGAINST('" + queryWithQuotesAndFlags_filtered + "' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT " + repLimStr + " OFFSET " + repOffsetStr + ""
 						}
@@ -601,7 +608,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-
+		//fmt.Printf("\n%s",sqlQuery)
 		switch noresults { //if noresults == 1, no results were found during search on active replication servers
 		case 0:
 			// Send the query
@@ -1219,6 +1226,40 @@ func substr(s string, start int, end int) string {
 		i++
 	}
 	return s[start_str_idx:]
+}
+
+func checkformat(query string) string{
+	//Check if query contains a hyphenated word. Replace hyphens with a space, drop at hyphen if set as required word.
+	if strings.Contains(query, "-") || strings.Contains(query, "+") {
+		hyphenwords := strings.Split(query, " ")
+		query = ""
+		quotes := 0
+		for i, word := range hyphenwords {
+			if strings.Contains(word, "\"") {
+				quotes++
+			}
+			if (strings.Contains(word, "-") || strings.Contains(word, "+")) && word[0] != '-' && word[0] != '+' && quotes%2 == 0 { //if hyphen or plus exists, not a flag, not wrapped in quotes already
+				word = strings.Replace(word, "-", " ", -1)
+			}else if strings.Contains(word, "-") && (word[0] == '+') { //if hyphen exists and is a required word
+				word = strings.Replace(word, "-", " ", -1)
+				spos := strings.Index(word, " ")
+				if spos != -1 {
+					word = word[:spos]
+				}
+				if spos < 4 && spos > 0 {
+					word = ""
+				}
+			}
+			if len(word)>1 && word[0] == '+' && len(word)<4{
+				word = word[1:]
+			}
+			if i > 0 {
+				query += " "
+			}
+			query += word
+		}
+	}
+	return query
 }
 
 func searchredirect(w http.ResponseWriter, r *http.Request, query string) {
