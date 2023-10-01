@@ -198,7 +198,7 @@ else
 		$queryNoQuotes = str_replace('*', "",$queryNoQuotes);
 	}
 
-	//first remove any flags inside queryNoQuotes, also grab any required words (+ prefix) 
+	//remove any flags inside queryNoQuotes, also grab any required words (+ prefix) 
 	$queryNoQuotesOrFlags = $queryNoQuotes;
 	$requiredword = '';
 	$flags = '';
@@ -211,16 +211,16 @@ else
 		$queryNoQuotesOrFlags = '';
 		foreach ($words as $word) {
 			$wordlen = strlen($word);
-			if($i != 0 && $word[0] != '-' && $word[0] != '+'){
+			if($word != '' && $i != 0 && $word[0] != '-' && $word[0] != '+'){
 				$queryNoQuotesOrFlags .= ' ';
 			}			
-			if ($word[0] != '-' && $word[0] != '+'){
+			if ($word != '' && $word[0] != '-' && $word[0] != '+'){
 				$queryNoQuotesOrFlags .= $word;
 			}
-			if ($word[0] == '+' && strlen($word) > 1 && $requiredword == ''){
+			if ($word != '' && $word[0] == '+' && strlen($word) > 1 && $requiredword == '' && strpos($queryNoQuotes,'-') !== false){
 				$requiredword = substr($word,1);
 			}
-			if ($word[0] == '-' || $word[0] == '+'){
+			if ($word != '' && ($word[0] == '-' || $word[0] == '+')){
 				$flags .= " $word";
 				$flagssetbyuser++;
 				if($word[0] == '+'){
@@ -229,28 +229,26 @@ else
 			}
 			$i++;
 		}
+		$flags = checkformat($flags);
 	}
 
 	//$queryNoQuotes_SQLsafe = mysqli_real_escape_string($link, $queryNoQuotes);
 	//$flags = mysqli_real_escape_string($link, $flags);
 	
 	$words  = explode(' ', $queryNoQuotesOrFlags);
-	if($exactMatch == false)
-	{
-		//find longest word in query	
-		$longestWordLength = 0;
-		$longestWord = '';
-		$wordcount = 0;
-		$longestwordelementnum = 0;
-		foreach ($words as $word) {
-			if (strlen($word) > $longestWordLength) {
-				$longestWordLength = strlen($word);
-				$longestWord = $word;
-				$longestwordelementnum = $wordcount;
-			}
-			if($word != ''){
-				$wordcount++;
-			}
+	$wordcount = 0;
+	$longestWord = '';
+	//find longest word in query	
+	$longestWordLength = 0;
+	$longestwordelementnum = 0;
+	foreach ($words as $word) {
+		if (strlen($word) > $longestWordLength) {
+			$longestWordLength = strlen($word);
+			$longestWord = $word;
+			$longestwordelementnum = $wordcount;
+		}
+		if($word != ''){
+			$wordcount++;
 		}
 	}
 
@@ -260,50 +258,32 @@ else
 	$wordlen=0;
 	foreach ($words as $word) {
 		$wordlen = strlen($word);
-		if($i==0 && ($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
+		if($i==0 && $wordlen > 3 && ($word[0] == '+' || $word[0] == '-')){
 			$reqwordQuery .= "$word";
-		}
-		if($i==0 && $word[0] != '+' && $word[0] != '-'){
+		}else if($i==0 && $wordlen > 1 && $word[0] != '+' && $word[0] != '-'){
 			if($wordlen > 2){
 				$reqwordQuery .= "+$word";
 			}else{
 				$reqwordQuery .= "$word";
 			}
+		}else if($i==0){
+			$reqwordQuery .= "$word";
 		}
-		if($i!=0 && ($word[0] == '+' || $word[0] == '-') && $wordlen > 3){
+		if($i!=0 && $wordlen > 3 && ($word[0] == '+' || $word[0] == '-')){
 			$reqwordQuery .= " $word";
-		}		
-		if($i!=0 && $word[0] != '+' && $word[0] != '-' ){
+		}else if($i!=0 && $wordlen > 1 && $word[0] != '+' && $word[0] != '-' ){
 			if($wordlen > 2){			
 				$reqwordQuery .= " +$word";
 			}else{
 				$reqwordQuery .= " $word";
 			}
+		}else if($i!=0){
+			$reqwordQuery .= " $word";
 		}
 		$i++;	
 	}
+	$reqwordQuery = checkformat($reqwordQuery);
 	$reqwordQuery .= " $flags";
-
-	//Check if query contains a hyphenated word. MySQL is finicky about them. We will wrap quotes around hyphenated words that aren't part of a string which is already wraped in quotes.
-	if((strpos($queryNoQuotes,'-') !== false || strpos($queryNoQuotes,'+') !== false) && $urlDetected == false){
-		$hyphenwords = explode(' ',$query);
-		$query = '';
-		$quotes = 0;
-		$i = 0;
-		foreach ($hyphenwords as $word) {
-			if(strpos($queryNoQuotes,'"') !== false){
-				$quotes++;
-			}
-			if(((strpos($word,'-') !== false && $word[0] != '-') || (strpos($word,'+') !== false && $word[0] != '+')) && $quotes%2 == 0){//if hyphen exists, not a flag, not wrapped in quotes already
-				$word = '"' . $word . '"';
-			}
-			if($i > 0){
-				$query .= ' ';
-			}
-			$query .= $word;
-			$i++;
-		}
-	}
 
 	//if no required words set, make the longest word in the query required.
 	$querywithrequiredword = "";
@@ -345,9 +325,14 @@ else
 		$querytouse = $query;
 	}
 
+	if($exactMatch == false && $urlDetected == false){
+		$querytouse = checkformat($querytouse);
+		$reqwordQuery = checkformat($reqwordQuery);
+	}
+
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-	if($exactMatch !== true && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $flagssetbyuser){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
+	if(($exactMatch !== true || $flagssetbyuser > 0) && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $flagssetbyuser){
+		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}else{
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
@@ -421,7 +406,7 @@ else
 					{
 						//if(strpos($words[longestwordelementnum],'*') == true)//remove the '*' at the end of the query if present
 							//$words[longestwordelementnum] = str_replace('*', "",$words[0]);					
-						$pos = stripos($body, $words[longestwordelementnum]);
+						$pos = stripos($body, $words[$longestwordelementnum]);
 					}
 					else if($longestwordelementnum == 0)
 					{
@@ -525,4 +510,36 @@ else
    	include 'results.html.php';    
 }    
 
+function checkformat($query){
+	//Check if query contains a hyphenated word. Replace hyphens with a space, drop at hyphen if set as required word.
+	if(strpos($query,'-') !== false || strpos($query,'+')){
+		$hyphenwords = explode(' ',$query);
+		$query = '';
+		$quotes = 0;
+		$i = 0;
+		foreach ($hyphenwords as $word) {
+			if(strpos($query,'"') !== false){
+				$quotes++;
+			}
+			if((strpos($word,'-') !== false || strpos($word,'+') !== false) && $word[0] != '-' && $word[0] != '+' && $quotes%2 == 0){ //if hyphen or plus exists, not a flag, not wrapped in quotes already
+				$word = str_replace("-", " ",$word);
+			}else if(strpos($word,'+') !== false && $word[0] == '+'){//if hyphen exists and is a required word
+				$word = str_replace("-", " ",$word);
+				$spos = strpos($word, " ");
+				if($spos !== false){
+					$word = substr($word,0,$spos);//drop at hyphen if found
+				}
+			}
+			if(strlen($word)>1 && $word[0]=='+' && strlen($word)<4){
+				$word = substr($word,1);
+			}
+			if($i > 0){
+				$query .= ' ';
+			}
+			$query .= $word;
+			$i++;
+		}
+	}
+	return $query;
+}
 ?>
