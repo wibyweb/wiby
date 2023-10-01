@@ -1,5 +1,6 @@
 <?php header("Content-Type: application/json;charset=utf-8"); ?>
 <?php $i=0; ?>[
+<?php if(isset($url)): ?>
 <?php foreach ($url as $storedresult): ?>
 <?php $title[$i] = htmlentities($title[$i], ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); ?>
 <?php $bodymatch[$i] = htmlentities($bodymatch[$i], ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); ?>
@@ -15,4 +16,5 @@
   }<?php if ($i<sizeof($url)): ?>,
 <?php endif ?><?php endforeach; ?>
 
-]
+<?php endif; ?>]
+
