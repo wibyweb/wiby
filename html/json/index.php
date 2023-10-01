@@ -32,6 +32,11 @@ else
 	$startID = 0;	
 	$additions = "";
 
+	if(isset($_REQUEST['nsfw']))
+	{
+		$worksafe = false;
+	}
+
 	//Check if no query found
 	if($query == "")
 	{
@@ -47,7 +52,7 @@ else
 		$query = substr($query,1,strlen($query));
 	}
 
-	//check if user wants to search a different search engine (!) or time window
+	//check if user wants to search a different time window
 	if(($query[0] == "!" || $query[0] == "&") && strlen($query) > 3)
 	{
 		//separate actual query from search redirect	
@@ -66,31 +71,7 @@ else
 				$actualquery .= $query[$i];
 			}
 		}	
-		//determine which search engine to redirect or which time window to use
-		if ($redirect == "g"){//if google
-			header('Location: '."http://google.com/search?q=$actualquery");
-			exit();
-		}else if ($redirect == "b"){//if bing
-			header('Location: '."http://bing.com/search?q=$actualquery");
-			exit();
-		}else if ($redirect == "gi"){//if google image search
-			header('Location: '."http://www.google.com/search?tbm=isch&q=$actualquery");
-			exit();
-		}else if ($redirect == "bi"){//if bing image search
-			header('Location: '."http://www.bing.com/images/search?q=$actualquery");
-			exit();
-		}else if ($redirect == "gv"){//if google video search
-			header('Location: '."http://www.google.com/search?tbm=vid&q=$actualquery");
-			exit();
-		}else if ($redirect == "bv"){//if bing video search
-			header('Location: '."http://www.bing.com/videos/search?q=$actualquery");
-			exit();
-		}else if ($redirect == "gm"){//if google maps search
-			header('Location: '."http://www.google.com/maps/search/$actualquery");
-			exit();
-		}else if ($redirect == "bm"){//if bing maps search
-			header('Location: '."http://www.bing.com/maps?q=$actualquery");
-		}else if ($redirect == "td"){
+		if ($redirect == "td"){
 			$additions = $additions."AND date > NOW() - INTERVAL 1 DAY ";
 			$query = $actualquery;
 		}else if ($redirect == "tw"){
