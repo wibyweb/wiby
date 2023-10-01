@@ -329,8 +329,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				}
 				reqwordQuery += word
 			}
-			reqwordQuery = checkformat(reqwordQuery)
 		}
+		reqwordQuery = checkformat(reqwordQuery)
 		reqwordQuery += flags
 
 		//fmt.Printf("\n%s",reqwordQuery)
