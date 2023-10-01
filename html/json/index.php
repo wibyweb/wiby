@@ -318,36 +318,11 @@ else
 		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
 
-/*	if($exactMatch == false && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $wordcount){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$reqwordQuery' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$query' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");*/
-
 	if($urlDetected == 1)
 	{
 		$query = $queryOriginal;
 	}
 
-	/*if(mysqli_num_rows($outputFTS) <= 3 && $offset == 0 && $urlDetected == 0 && $exactMatch == false)
-	{
-		$starappend = 1;
-		$querystar = $query;
-		//innodb will get fussy over some things if put in like '''' or ****, uncomment below lines if using innoDB
-		$querystar = str_replace('*', "",$querystar);
-		$querystar = str_replace('"', "",$querystar);
-		$querystar = str_replace('"', "",$querystar);
-		$querystar = str_replace('\'', "",$querystar);
-		//-----------------------------------------------
-	
-		$querystar = $querystar . '*';
-		//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
-		$outputFTSgeneral = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE Match(tags, body, description, title, url) Against('$querystar' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 END DESC, id DESC LIMIT $lim OFFSET $offset");
-
-		if(!$outputFTSgeneral)
-		{
-		  $error = 'Error ' . mysqli_error($link);  
-		  include 'error.html.php';  
-		  exit(); 
-		}		
-	}*/
 	//this will get set if position of longest word of query is found within body
 	$pos = -1;
 
@@ -535,3 +510,4 @@ function JSONRealEscapeString($var){
 }
 
 ?>
+
