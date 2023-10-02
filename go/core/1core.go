@@ -305,7 +305,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		//create another query where all compatible words are marked as keywords
+		//create another query where all compatible words are marked as required
 		reqwordQuery := ""
 		for i, word := range words{
 			wordlen = len(word)
