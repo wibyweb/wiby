@@ -2,7 +2,8 @@
 <html>  
   <head>
     <meta charset="UTF-8"/>
-    <title>{{.Query}}</title> 
+    <title>{{.Query}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/styles.css" type="text/css"> 
     <link rel="search" type="application/opensearchdescription+xml" title="Your title" href="/opensearch.xml">	
   </head>  
