@@ -4,8 +4,9 @@
 
   <head>    
     <title>Submit to the Wiby Web</title>   
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>   
-    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">  
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">
     <style type="text/css">    
       textarea {   
         display: block;   
