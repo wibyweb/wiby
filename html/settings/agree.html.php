@@ -7,8 +7,9 @@
 
     <title>Adult Content Agreement</title>    
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>    
-    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">  
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">
 
   </head>    
 
