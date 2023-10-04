@@ -3,7 +3,8 @@
   <head>    
     <title>Title</title>    
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
-    <meta name="description" content="Set your description"/> 
+    <meta name="description" content="Set your description"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/styles.css" type="text/css">
     <link rel="search" type="application/opensearchdescription+xml" title="Search Title" href="/opensearch.xml">	
   </head>    
