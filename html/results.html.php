@@ -3,9 +3,10 @@
 <html>  
   <head>  
     <title><?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8');?></title>  
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
-	<link rel=stylesheet href="/styles.css" type="text/css"> 
-	<link rel="search" type="application/opensearchdescription+xml" title="your title" href="/opensearch.xml">	
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel=stylesheet href="/styles.css" type="text/css"> 
+    <link rel="search" type="application/opensearchdescription+xml" title="your title" href="/opensearch.xml">	
   </head>  
   <body>
     <form method="get">    
