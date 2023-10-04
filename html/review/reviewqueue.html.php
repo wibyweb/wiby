@@ -9,7 +9,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
     <link rel="stylesheet" type="text/css" href="/styles.css">  
     <style> 
-		blockquote { width: 100%; }
+		blockquote { max-width: 100%; }
 		input[type='number'] { width: 80px; }
     </style>
   </head>  
