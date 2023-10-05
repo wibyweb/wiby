@@ -120,9 +120,11 @@ void htmlparse(){
 				}
 				if(c != 32 && skipchar == 0){//some titles are just a bunch of spaces or garbage, need to check for that
 					emptytitle = 0;
-				}				
+				}
+				if(titlesize >= (title_len-2))
+					titlefound=3;			
 			}
-			if(locateInWindow(window,"</title>","</TITLE>",8)==1){
+			if(locateInWindow(window,"</title>","</TITLE>",8)==1 && titlefound!=3){
 				titlefound = 3;
 				//remove </title> from end of title by inserting null at location of <
 				titlesize -= 8;
@@ -131,9 +133,9 @@ void htmlparse(){
 			}
 		}
 		if(titlefound == 1 && c=='>')//in case of this situation: <title some_nonsense>
-			titlefound=2;		
+			titlefound = 2;		
 		if(titlefound == 0 && locateInWindow(window,"<title","<TITLE",6)==1){
-				titlefound = 1;
+			titlefound = 1;
 		}
 		
 		//Get Charset
