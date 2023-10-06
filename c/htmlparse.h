@@ -44,7 +44,7 @@ char c;
 void htmlparse(){
 	long urlListSize=0;
 	numURL=0;
-	int intag=0,incomment=0,inscript=0,instyle=0,inlink=0,putspace=0,spacecount=0;
+	int intag=0,incomment=0,inscript=0,instyle=0,inlink=0,putspace=0,spacecount=0,foundbr=0;
 	int urlSize=0,dqcount=0;
 	titlefound=charsetfound=descriptionfound=keywordsfound=robotsfound=nofollow=noindex=scriptfound=stylefound=num_stylesheets=num_scripts=0;
 	charsetsize=titlesize=keywordssize=descriptionsize=robotssize=bodysize=0;
@@ -118,9 +118,10 @@ void htmlparse(){
 					title[titlesize]=c;
 					titlesize++;
 				}
-				if(c != 32 && skipchar == 0){//some titles are just a bunch of spaces or garbage, need to check for that
+				if(c == '<')
+					foundbr=1;
+				if(c != 32 && skipchar == 0 && foundbr == 0)//some titles are just a bunch of spaces or garbage, need to check for that
 					emptytitle = 0;
-				}
 				if(titlesize >= (title_len-2))
 					titlefound=3;			
 			}
