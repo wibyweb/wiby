@@ -10,7 +10,7 @@
 #define window_len 100
 #define charset_len 100
 #define mysqlcharset_len 100
-#define title_len 152
+#define title_len 144
 #define keywords_len 1024
 #define description_len 182
 #define robots_len 100
