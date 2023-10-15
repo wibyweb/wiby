@@ -1788,6 +1788,7 @@ int main(int argc, char **argv)
 								memset(url_fromlist,0,url_fromlist_arraylen);
 								elementnum=0;
 								loopcount++;
+								break;
 							default :
 								if(loopcount<url_fromlist_arraylen){
 									url_fromlist[elementnum]=urlListShuffled[loopcount];
