@@ -141,7 +141,7 @@ void urlparse(char* url){
 		}
 	
 		//check for file extension like html/htm/txt if no prefix in url
-		if(noprebutisdomain==1 && urlsize>4){
+		if(noprebutisdomain==1 && strlen(urlnopathnoprefix_fromlist)>4){
 			if(checkDomain(urlnopathnoprefix_fromlist,".html",".HTML",urlnopathnoprefix_len,5)==1 || checkDomain(urlnopathnoprefix_fromlist,".htm",".HTM",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".txt",".txt",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".php",".PHP",urlnopathnoprefix_len,4)==1 || checkDomain(urlnopathnoprefix_fromlist,".shtml",".SHTML",urlnopathnoprefix_len,6)==1 || checkDomain(urlnopathnoprefix_fromlist,".xhtml",".XHTML",urlnopathnoprefix_len,6)==1 || checkDomain(urlnopathnoprefix_fromlist,".cgi",".CGI",urlnopathnoprefix_len,4)==1){
 				memset(domain,0,1000);
 				memset(urlnoprefix_fromlist,0,1000);
@@ -286,11 +286,15 @@ void urlparse(char* url){
 
 int checkDomain(char *domain, char *substrLower, char *substrUpper, int domainLen, int substrLen){
 	int j=0;
-	for(int i=domainLen-substrLen;i<domainLen;i++){
-		if(domain[i]!=substrLower[j] && domain[i]!=substrUpper[j]){
-			return 0;	
+	if(domainLen>=substrLen){
+		for(int i=domainLen-substrLen;i<domainLen;i++){
+			if(domain[i]!=substrLower[j] && domain[i]!=substrUpper[j]){
+				return 0;	
+			}
+			j++;
 		}
-		j++;
-	}
-	return 1;
+		return 1;
+	}else{
+		return 0;
+	}	
 }

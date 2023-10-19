@@ -247,8 +247,8 @@ int main(int argc, char **argv)
 			int prefixsize = httpswww+httpwww+https+http;
 			char urlnoprefix[urlsize-prefixsize+1];
 			char urlnopathnoprefix[urlsize-prefixsize+1];
-			memset(urlnoprefix,0,urlsize-prefixsize+2);
-			memset(urlnopathnoprefix,0,urlsize-prefixsize+2);
+			memset(urlnoprefix,0,urlsize-prefixsize+1);
+			memset(urlnopathnoprefix,0,urlsize-prefixsize+1);
 			int urlcount=0,urlnoprefixcount=0,urlnopathnoprefix_done=0;
 
 			//store the url without prefix to urlnoprefix

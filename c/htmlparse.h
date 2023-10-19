@@ -311,7 +311,7 @@ void htmlparse(){
 			if(urlFound == 0 && urlTagFound == 0 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && locateInWindow(windowWithSpaces,"<a ","<A ",3)==1){//sometimes there is something between "<a" and "href"
 				urlTagFound = 1;
 			}			
-			if(urlFound == 0 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && (locateInWindow(window,"ahref=","AHREF=",6)==1) || (urlTagFound == 1 && locateInWindow(window,"href=","HREF=",5)==1)){
+			if(urlFound == 0 && incomment == 0 && instyle == 0 && inscript == 0 && inlink == 0 && (locateInWindow(window,"ahref=","AHREF=",6)==1 || (urlTagFound == 1 && locateInWindow(window,"href=","HREF=",5)==1))){
 				urlFound = 1;
 			}
 		}		
@@ -532,7 +532,7 @@ int locateInURL(char *url, char *birdLower, char *birdUpper, int length, int url
 	long start = urlSize-length;
 	if(urlSize >= length){
 		for(int i=0;i<length;i++){
-			if(url[start] != birdLower[i] && window[start] != birdUpper[i]){
+			if(url[start] != birdLower[i] && url[start] != birdUpper[i]){
 				return 0;
 			}
 			start++;
