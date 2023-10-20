@@ -129,6 +129,8 @@ void htmlparse(){
 				titlefound = 3;
 				//remove </title> from end of title by inserting null at location of <
 				titlesize -= 8;
+				if(titlesize < 0) //avoids this: <titleMy videos</title> 
+					titlesize = 0;				
 				title[titlesize] = 0;
 				//printf("\n%s",title);
 			}
