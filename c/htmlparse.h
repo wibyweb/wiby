@@ -129,8 +129,10 @@ void htmlparse(){
 				titlefound = 3;
 				//remove </title> from end of title by inserting null at location of <
 				titlesize -= 8;
-				if(titlesize < 0) //avoids this: <titleMy videos</title> 
-					titlesize = 0;				
+				if(titlesize < 0){ //avoids this: <titleMy videos</title> 
+					titlesize = 0;
+					emptytitle = 1;
+				}			
 				title[titlesize] = 0;
 				//printf("\n%s",title);
 			}
@@ -591,34 +593,34 @@ int canCrawl(int urlSize, char *urltocheck){
 }
 
 void filtervars(){
-	//Creates a copy of title, description, body variables with single-qutoes filtered out
+	//Creates a copy of title, description, body variables with single-quotes filtered out
 	//will be used for the shard tables, but not on the primary 'windex' table
 	//allows a more restrictive query to be used. Is agnostic to searches containing single-quotes as a compromise
 
 	//filter title
 	int j=0;
 	for(int i=0;i<titlesize;i++){
-			if(title[i]!=39){
-				title_filtered[j]=title[i];
-				j++;
-			}
+		if(title[i]!=39){
+			title_filtered[j]=title[i];
+			j++;
+		}
 	}
 	
 	//filter description
 	j=0;
 	for(int i=0;i<descriptionsize;i++){
-			if(description[i]!=39){
-				description_filtered[j]=description[i];
-				j++;
-			}
+		if(description[i]!=39){
+			description_filtered[j]=description[i];
+			j++;
+		}
 	}
 	
 	//filter body
 	j=0;
 	for(int i=0;i<bodysize;i++){
-			if(body[i]!=39){
-				body_filtered[j]=body[i];
-				j++;
-			}
+		if(body[i]!=39){
+			body_filtered[j]=body[i];
+			j++;
+		}
 	}
 }
