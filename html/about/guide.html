@@ -294,7 +294,7 @@ If using more than one crawler, update the variable '$num_crawlers' from inside 
 Note that you may need to change the crawler's user-agent (CURLOPT_USERAGENT in cr.c and checkrobots.h) if you have issues indexing some websites. Pages that fail to index are noted inside of abandoned.txt.
 <br> 
 <br>
-Make sure the robots folder exists, or create one in the same directory as core. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. You can also create custom robots.txt files for specific domains and store them there for the crawler to reference.
+Make sure the robots folder exists, or create one in the same directory as the crawler. All robots.txt files are stored in the robots folder. They are downloaded once and then referenced from that folder on future updates. Clear this folder every few weeks to ensure robots.txt files get refreshed from time to time. You can also create custom robots.txt files for specific domains and store them there for the crawler to reference.
 To disable checking for robots.txt files, comment out the line calling the "checkrobots" function inside of cr.c.
 <br>
 <br>
@@ -310,7 +310,7 @@ start it manually with this command: 'nohup ./rt' then press ctrl-c.
 You can run the core server on startup with a cron job, or start it manually with this command: 'nohup ./core' then press ctrl-c.
 <br>
 <br>
-If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have at least four available CPU cores. It is recommended you use 'core' as it makes better use of your CPU, but make sure to read the scaling section.
+If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have at least four available CPU cores. It is recommended you use 'core' as it makes better use of your CPU, but make sure to read the <a href="guide.html#scale">scaling section</a>.
 <br>
 <br>
 If you want to use 1core on a server separate from your reverse proxy server, modify line 37 of 1core.go: replace 'localhost' with '0.0.0.0' so that it accepts connections over your VPN from your reverse proxy.
@@ -469,7 +469,7 @@ If you need to stop the web crawler in a situation where it was accidently queue
 <hr>
 <h2><a name="scale">Scaling the Search Engine</a></h2>
 <br>
-You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to each other, run the core application AND replication tracker (rt) on one or more full-replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs and available shard tables (ws0 to wsX). Four are already preconfigured.
+You can help ensure sub-second search queries as your index grows by building MySQL replica servers on a local network close to each other, run the core application AND replication tracker (rt) in the same directory on one or more full-replica servers and point your reverse proxy to use it. Edit the servers.csv file for rt to indicate all available replica IPs and available shard tables (ws0 to wsX). Four are already preconfigured.
 <br>
 <br>
 If you have a machine with at least four CPU cores, entering multiple duplicate entries to the same sever inside servers.csv (e.g. one for each CPU core) works also. By default, four duplicate connections are already set to use your existing machine.
