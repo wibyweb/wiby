@@ -1611,12 +1611,12 @@ int main(int argc, char **argv)
 							fclose(abandoned);
 						}
 					}
-
-				//check if link crawling is specified
+				}
+				//check if link crawling is specified, will still collect and crawl hyperlinks on pages that fail the rule check (when checked).
 				//make sure duplicates don't get crawled more than once
 				//check db if its already indexed too - do this at beginning instead?
 				//crawl links if crawling through hyperlinks, or from regular refresh while crawl_repeat is on, or during manual submission when appropriate limits are set
-				}else if(nofollow==0 && getURLs==1 && alreadydone==0){
+				if(nofollow==0 && getURLs==1 && alreadydone==0 && titlechanged == 0 && redirected == 0 && (emptytitle == 0 || descriptionsize > 0 || bodysize > 0) && response_code == 200){
 					//cycle through url list, then construct an sql string around it, then insert it to indexqueue;	
 
 					//force crawl depth of 1 during a refresh if crawl_repeat is set
