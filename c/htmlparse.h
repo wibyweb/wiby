@@ -481,7 +481,11 @@ void charset2mysql()
 		else if(matchMySQLcharset(charsetsize,charset,12,"windows-1251","WINDOWS-1251")==1){
 			strcpy(mysqlcharset,"SET CHARSET cp1251;");
 			printf("%s",mysqlcharset);
-		}		
+		}
+		else if(matchMySQLcharset(charsetsize,charset,12,"windows-1250","WINDOWS-1250")==1){
+			strcpy(mysqlcharset,"SET CHARSET cp1250;");
+			printf("%s",mysqlcharset);
+		}			
 		else if(matchMySQLcharset(charsetsize,charset,6,"koi8-r","KOI8-R")==1){
 			strcpy(mysqlcharset,"SET CHARSET cp1251;");
 			printf("%s",mysqlcharset);
