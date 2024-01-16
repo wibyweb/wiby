@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 				long size=0;
 				char *finalURL = NULL;
 				long response_code;	
-				int finalURLsize = 0,skipurl=0;
+				int finalURLsize = 0,skipurl=0, disallowlinks=0;
 				if (curl) {
 					fp = fopen(outfilename,"wb");
 					//Get file size
@@ -552,6 +552,7 @@ int main(int argc, char **argv)
 				while(finalURL[finalURLcount]!=0){
 					if(finalURL[finalURLcount]=='\''){
 						skipurl=1;
+						getURLs=0;
 						printf("\nURL contains single-quote. Skipping.");
 					}
 					finalURLcount++;
@@ -580,12 +581,14 @@ int main(int argc, char **argv)
 
 				if(finalURLsize>500){
 					skipurl=1;
+					getURLs=0;
 					printf("\nURL is too long");
 				}
 
 				if(task != 0 && task[0]=='2' && canCrawl(finalURLsize,finalURL)==0){
 					printf("\nEffective URL failed crawl rules.");
 					skipurl=1;
+					getURLs=0;
 				}
 
 				char finalURLnoprefix[finalURLsize-prefixsize+100];
