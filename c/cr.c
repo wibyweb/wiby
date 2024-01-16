@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 				long size=0;
 				char *finalURL = NULL;
 				long response_code;	
-				int finalURLsize = 0,skipurl=0, disallowlinks=0;
+				int finalURLsize=0, skipurl=0;
 				if (curl) {
 					fp = fopen(outfilename,"wb");
 					//Get file size
