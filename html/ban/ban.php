@@ -62,7 +62,7 @@
 			}else if($url != ''){
 				
 				$url = substr($url,0,400); //don't allow user to post a longer url than 400b 					
-				if(strpos($url,'.') == false || strpos($url,' ') == true){
+				if(strpos($url,' ') == true){
 					echo "It doesn't look like you submitted a valid URL: '". $url ."'";
 					include 'form.html.php';
 					exit();					
