@@ -14,7 +14,7 @@ void finish_with_error(MYSQL *con)
 	exit(1);        
 }
 void help(){
-	printf("\nWiby Refresh Scheduler\n\nUsage: re Batch_Limit Total_Crawlers\n\nThe refresh scheduler finds pages that need to be refreshed and adds them to the indexqueue to be crawled. It will wait for the batch to complete before adding more.\n\nThere are two arguments you can set, the max number of pages to grab for each batch, and the total number of crawlers available.\n\nIf you set no arguments, it assumes you have one crawler running with an unassigned ID or an ID of 1, and will set a limit of one page per batch, rechecking if it finishes every 5 seconds. This slow paced default is fine for an index of 100k pages or so and will not use much CPU.\n\nIf you have two crawlers running and a batch limit of 100 pages, this is how you would run the scheduler:\n\n./re 100 2\n\nIn that example, each crawler will be assigned 50 pages. Once all 100 have been crawled, another batch will be assigned.\n\nYou can also specify only a batch limit and omit the total number of crawlers, it will then assume one crawler with an unassigned ID or ID of 1 by default.\n\nThe program will sleep for 60 seconds if there are no stale pages found.\n\n");
+	printf("\nWiby Refresh Scheduler\n\nUsage: rs Batch_Limit Total_Crawlers\n\nThe refresh scheduler finds pages that need to be refreshed and adds them to the indexqueue to be crawled. It will wait for the batch to complete before adding more.\n\nThere are two arguments you can set, the max number of pages to grab for each batch, and the total number of crawlers available.\n\nIf you set no arguments, it assumes you have one crawler running with an unassigned ID or an ID of 1, and will set a limit of ten pages per batch, rechecking if it finishes every 5 seconds.\n\nIf you have two crawlers running and a batch limit of 100 pages, this is how you would run the scheduler:\n\n./rs 100 2\n\nIn that example, each crawler will be assigned 50 pages. Once all 100 have been crawled, another batch will be assigned.\n\nYou can also specify only a batch limit and omit the total number of crawlers, it will then assume one crawler with an unassigned ID or ID of 1 by default.\n\nThe program will sleep for 60 seconds if there are no stale pages found.\n\nIf you notice pages are not being updated when expected, you may have to increase the batch limit or add another crawler.\n\n");
 	exit(0);	
 }
 int isnum(char *source){
@@ -29,8 +29,8 @@ int isnum(char *source){
 
 int main(int argc, char **argv)
 {
-	int wait_batch = 0,n_lim=1,num_cr=0,cr_count=1;
-	char lim[100] = "1";
+	int wait_batch = 0,n_lim=10,num_cr=0,cr_count=1;
+	char lim[100] = "10";
 
 	if(argc == 3 && isnum(argv[2])==1 && isnum(argv[1])==1){
 		num_cr = atoi(argv[2]);
