@@ -280,11 +280,11 @@ Also the example file references php7.4-fpm.sock, so if you are using a differen
 <h3>Start the Refresh Scheduler</h3>
 This program (rs) will make sure all pages indexed are refreshed at least once per week (or sooner depending on how you assign updates to an individual website). 
 You may want to run this on startup, easiest way to set that is with a cron job (crontab -e). Run './rs -h' to get more parameters and info needed to run multiple crawlers. 
-To start manually:  'nohup ./rs' then press ctrl-c.
+To start manually:  'nohup ./rs &' then press ctrl-c.
 <br>
 <br>
 <h3>Start the Crawler</h3>
-It is best to run the crawler in a screen session so that you can monitor its output. You can have more than one crawler running as long as you keep them in separate directories, include symlinks to the same robots folder and 'shards' file, and also set the <b>correct parameters</b> on each. 
+It is best to run the crawler in a <a href="https://www.gnu.org/software/screen/manual/screen.html">Screen</a> session so that you can monitor its output. You can have more than one crawler running as long as you keep them in separate directories, include symlinks to the same robots folder and 'shards' file, and also set the <b>correct parameters</b> on each. 
 To view the parameters, type './cr -h'. Without any parameters set, you can only run one crawler (which might be all you need anyway). If necessary, you can change the database connection from 'localhost' to a different IP from inside cr.c, then rebuild.
 <br>
 <br>
@@ -303,11 +303,11 @@ If crawling through hyperlinks on a page, the following file types are accepted:
 <br>
 <h3>Start the Replication Tracker</h3>
 The tracker (rt) should run in the same directory that you will run the core server on. You do not need this if running 1core or the PHP only version. You can use a cron job to run it on startup, or 
-start it manually with this command: 'nohup ./rt' then press ctrl-c.
+start it manually with this command: 'nohup ./rt &' then press ctrl-c.
 <br>
 <br>
 <h3>Start the Core Server</h3>
-You can run the core server on startup with a cron job, or start it manually with this command: 'nohup ./core' then press ctrl-c.
+You can run the core server on startup with a cron job, or start it manually with this command: 'nohup ./core &' then press ctrl-c.
 <br>
 <br>
 If you are just starting out, '1core' or the php version is easiest to start with. Use 'core' if you want to scale computer resources as the index grows or if you have at least four available CPU cores. It is recommended you use 'core' as it makes better use of your CPU, but make sure to read the <a href="guide.html#scale">scaling section</a>.
