@@ -48,24 +48,24 @@ void urlparse(char* url){
 				urlcopy[0]=0;
 				urlsize=0;
 			}	
-		}else if(urlsize == 9){
+		}/*else if(urlsize == 9){
 			if(checkDomain(urlcopy,"index.htm","INDEX.HTM",urlsize,9)==1){
 				urlcopy[0]=0;
 				urlsize=0;
 			}
-		}
+		}*/
 		if(urlsize > 10){
 			if(checkDomain(urlcopy,"/index.html","/INDEX.HTML",urlsize,11)==1){
 				urlcopy[urlsize-10]=0;
 				urlsize-=10;
 			}
 		}
-		if(urlsize > 9){
+		/*if(urlsize > 9){
 			if(checkDomain(urlcopy,"/index.htm","/INDEX.HTM",urlsize,10)==1){
 				urlcopy[urlsize-9]=0;
 				urlsize-=9;
 			}
-		}		
+		}*/	
 
 		if(urlsize > 4){
 			if(url[4]==':' && (url[3]=='p' || url[3]=='P'))
