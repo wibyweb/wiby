@@ -74,7 +74,7 @@
 			$url = "http://" . $url;
 		}
 		$url = str_replace("/index.html", "/", $url);
-		$url = str_replace("/index.htm", "/", $url);
+		//$url = str_replace("/index.htm", "/", $url);//turns out cant reliably do the same for .htm
 
 		$sql = "INSERT INTO reviewqueue (url,worksafe) VALUES ('".$url."','".$worksafe."')";
 
