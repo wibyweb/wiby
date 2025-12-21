@@ -12,7 +12,7 @@
     <div align="right"><a class="tiny" href="/submit/">Submit a page here!</a><br></div>
     <div align="right"><a class="tiny" href="/settings/">Settings</a></div>  
     <div align="center"><h1 class="titlep">Name</h1><br></div>
-    <form method="get"> 
+    <form method="get" action="/">
       <div align="center">
         <input type="text" name="q" id="q" size="45" role="form" aria-label="Main search form" autofocus/>    
         <input type="submit" value="Search"/>
