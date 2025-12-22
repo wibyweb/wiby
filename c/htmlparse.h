@@ -223,6 +223,11 @@ void htmlparse(){
 				intag = 0;
 				putspace = 1;
 			}
+			
+			//put space where line feeds are found
+			if(c==10){
+				putspace = 1;
+			}			
 		
 			if(locateInWindow(window,"<!--","<!--",4)==1){
 				incomment = 1;
@@ -256,7 +261,7 @@ void htmlparse(){
 
 			//Get Body
 			//exclude remaining tags, comments, scripts, styles, cr, lf, null, tab, add a space after a '>' but only allow one
-			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 &&  skipchar == 0 && bodysize < (body_len-2)){
+			if(intag == 0 && incomment == 0 && inscript == 0 && instyle == 0 && inlink == 0 && (skipchar == 0 || putspace == 1) && bodysize < (body_len-2)){
 				if(putspace == 1){
 					if(spacecount == 0){
 						body[bodysize]=32;
