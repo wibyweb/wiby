@@ -673,6 +673,13 @@ Add the replica server's VPN address/port to upstream remote_core {} from the de
 <h3>Additional Notes</h3>
 The crawler stores a maximum of 80KB worth of text from the body of each webpage. To change this limit, edit the "body_len" definition from inside htmlparse.h and recompile the crawler. 
 This will affect the total size of the index and overall search speeds.
+<br>
+<br>
+Over time as more pages are crawled and updated, search indexes may need to be rebuilt to ensure optimal search speeds. I do this on a yearly basis and it makes a tangible difference. You can do this by either exporting and reimporting the database, or by altering the windex and shard tables to use the same storage engine they are already using. For example:
+<pre>
+ALTER TABLE windex ENGINE = InnoDB;
+</pre>
+Keep in mind you may need to resynch your replicas when you do this.
 </p>
 </blockquote>
 </body>    
