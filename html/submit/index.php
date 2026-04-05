@@ -69,7 +69,7 @@
 			$worksafe = 0;
 		}
 
-		if(strpos("x".$url,'http://') == false and strpos("x".$url,'HTTP://') == false and strpos("x".$url,'https://') == false and strpos("x".$url,'HTTPS://') == false)
+		if(stripos("x".$url,'http://') == false and stripos("x".$url,'https://') == false)
 		{
 			$url = "http://" . $url;
 		}

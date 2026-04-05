@@ -4,9 +4,9 @@
 
   <head>    
     <title>Submit to the Wiby Web</title>   
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
+    <meta name="viewport" content="width=device-width, initial-scale=1">  
+    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">  
     <style type="text/css">    
       textarea {   
         display: block;   
@@ -27,14 +27,17 @@
 	    <input type="text" id="url" name="url" maxlength="400" >
 	<?php endif; ?>
 	
-
       </div>    
 
       <div>
-        <label for="worksafe">worksafe:</label>   
-        <input type="checkbox" id="worksafe" name="worksafe" checked="checked">
+        <label for="worksafe">worksafe:</label>
+	<?php if(isset($_POST['url']) && $_POST['worksafe'] != 'on') : ?>   
+          <input type="checkbox" id="worksafe" name="worksafe">
+	<?php else : ?>
+	  <input type="checkbox" id="worksafe" name="worksafe" checked="checked">
+	<?php endif; ?>
       </div><br> 
-      <?php if($_SESSION["authenticated"]!=true): ?> 
+      <?php if($_SESSION["authenticated"] != true): ?> 
 	  <div>
 	    <img id="captcha" src="/securimage/securimage_show.php" alt="CAPTCHA Image" />
 	  </div>
@@ -42,14 +45,26 @@
 	    <input type="text" name="captcha_code" size="10" maxlength="6" />
 	    <a href="#" onclick="document.getElementById('captcha').src = '/securimage/securimage_show.php?' + Math.random(); return false">Reload Image</a>
       </div>
-      <p class="pin">* Cookies must be enabled for the captcha.</p>	    
+      <p class="pin">* Cookies must be enabled for the captcha.</p>
       <?php endif; ?>
       <br>
       <div><input type="submit" value="Submit"/></div>    
       <br><br>
       <h3>What kind of pages get indexed?</h3>
       <p>
-	      Enter your submission rules here.
+        Pages must be simple in design. Simple HTML, <b>non-commerical</b> sites are preferred.<br> 
+        <b>Pages should not use much scripts/css for cosmetic effect.</b> Some might squeak through.<br>
+	    Don't use ads that are intrusive (such as ads that appear overtop of content).<br>
+	    Don't submit a page which serves primarily as a portal to other bloated websites.<br>
+	    Avoid submitting multiple tens of pages from one person's website.<br>
+	    If your page does not contain any text or uses frames, ensure a meta description tag is added.<br>
+	    In most cases, only the page you submit will be crawled.<br>
+      </p>
+      <p class="pin">
+        <br><br>Note:<br>
+	<br>The WibyBot (172.93.49.252) is occasionally rejected by some web servers. 
+	<br>Barring technical issues, if you are puzzled why a site wasn't indexed, reread the above guide.
+	<br>Angelfire and Tripod pages are no longer grandfathered (ads are too intrusive).
       </p>
     </form>    
 

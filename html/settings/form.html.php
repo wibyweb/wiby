@@ -5,9 +5,9 @@
 
   <head>    
     <title>Settings</title>   
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">
+    <LINK REL=STYLESHEET HREF="../styles.css" TYPE="text/css">  
     <style type="text/css">  
     textarea {   
       display: block;   
@@ -34,7 +34,7 @@
 	    <?php else: ?>
 		<input type="checkbox" id="filterHTTPS" name="filterHTTPS" checked="checked">
 	 <?php endif; ?>
-      </div><p class="pin">*for old browsers</p> <br>
+      </div><p class="pin">*for old browsers, or add -https</p> <br>
       <div><input type="submit" value="Submit"/></div>    
       <div><br><br>
 	<a href="/submit/">Submit a URL</a>
@@ -69,6 +69,10 @@
       !bm Paris (Bing Maps)<br>
       <br>
       You may also use '&' in place of '!'.
+      <br>
+      <br>
+      <br> 
+      <b>Tip:</b> On ancient machines, disable JavaScript in the browser along with HTTPS filtering.
       </p>      
     </form>    
 
