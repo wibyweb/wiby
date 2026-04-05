@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-	//	"time"
+	"time"
 )
 
 type indexPage struct{}
@@ -45,7 +45,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//check if worksafe+https cookie enabled.
 	filterHTTPS := false
 	worksafe := true
-	worksafeHTTPSCookie, err := r.Cookie("ws")
+	worksafeHTTPSCookie, err := r.Cookie("wh")
 	if err != nil {
 		worksafe = true
 		filterHTTPS = false
@@ -198,6 +198,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if querylen > 7 && strings.ToLower(query[querylen-7:querylen]) == " -https" {
 			filterHTTPS = true
 			query = query[0 : querylen-7]
+			queryNoQuotes = queryNoQuotes[0 : len(queryNoQuotes)-7]
 			querylen = len(query)
 		}
 
@@ -416,7 +417,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			querytouse = checkformat(querytouse)
 			reqwordQuery = checkformat(reqwordQuery)
 		}
-		
+
 		//perform full text search FOR InnoDB STORAGE ENGINE or MyISAM
 		var sqlQuery, id, url, title, description, body string
 	
@@ -774,7 +775,8 @@ func settings(w http.ResponseWriter, r *http.Request) {
 	filterHTTPS := false
 	worksafe := true
 	worksafewasoff := false
-	worksafeHTTPSCookie, err := r.Cookie("ws")
+	worksafeHTTPSCookie, err := r.Cookie("wh")
+
 	if err != nil {
 		worksafe = true
 		filterHTTPS = false
@@ -806,58 +808,65 @@ func settings(w http.ResponseWriter, r *http.Request) {
 		agreecheck := r.Form.Get("agree")
 		agreesubmit := r.Form.Get("agreesubmit")
 		httpsbox := r.Form.Get("filterHTTPS")
+		expiration := time.Now().Add(365 * 24 * time.Hour)
+		userAgent := r.UserAgent()
+		if strings.HasPrefix(userAgent, "Mozilla/2.") || strings.HasPrefix(userAgent, "Mozilla/3."){
+			expiration = time.Time{}//cant use current standard of date format on netscape 2 and 3 :(
+		}
 
 		//if user agrees to terms to disable adult content, set cookie and return to index
 		if agreecheck == "on" {
 			worksafe = false
-			//expiration := time.Now().Add(365 * 24 * time.Hour)
 			if filterHTTPS == false {
-				cookie := http.Cookie{Name: "ws", Value: "0", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "0", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			} else {
-				cookie := http.Cookie{Name: "ws", Value: "2", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "2", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			}
-			p := indexPage{}
-			t, _ := template.ParseFiles("coreassets/settings/gohome.html")
-			t.Execute(w, p)
-			//else if worksafebox is checked, return to index with worksafe on
+			http.Redirect(w, r, "/", http.StatusFound)
+			//p := indexPage{}
+			//t, _ := template.ParseFiles("coreassets/settings/gohome.html")
+			//t.Execute(w, p)
+		//else if worksafebox is checked, return to index with worksafe on
 		} else if worksafebox == "on" || agreesubmit == "on" {
 			//expiration := time.Now().Add(365 * 24 * time.Hour)
 			if httpsbox != "on" {
-				cookie := http.Cookie{Name: "ws", Value: "1", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "1", Path: "/"}
 				http.SetCookie(w, &cookie)
 			} else {
-				cookie := http.Cookie{Name: "ws", Value: "3", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "3", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			}
-			p := indexPage{}
-			t, _ := template.ParseFiles("coreassets/settings/gohome.html")
-			t.Execute(w, p)
-			//else if worksafebox unchecked and no cookie, go to content agreement section
+			http.Redirect(w, r, "/", http.StatusFound)
+			//p := indexPage{}
+			//t, _ := template.ParseFiles("coreassets/settings/gohome.html")
+			//t.Execute(w, p)
+		//else if worksafebox unchecked and no cookie, go to content agreement section
 		} else if worksafebox != "on" && worksafewasoff == false && agreesubmit != "on" {
 			p := indexPage{}
 			if httpsbox == "on" {
-				cookie := http.Cookie{Name: "ws", Value: "3", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "3", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			} else {
-				cookie := http.Cookie{Name: "ws", Value: "1", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "1", Path: "/"}
 				http.SetCookie(w, &cookie)
 			}
 			t, _ := template.ParseFiles("coreassets/settings/agree.html.go")
 			t.Execute(w, p)
-			//else if worksafebox unchecked and cookie alredy agreed, go back to index
+		//else if worksafebox unchecked and cookie alredy agreed, go back to index
 		} else if worksafebox != "on" && worksafewasoff == true {
 			if httpsbox == "on" {
-				cookie := http.Cookie{Name: "ws", Value: "2", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "2", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			} else {
-				cookie := http.Cookie{Name: "ws", Value: "0", Path: "/"}
+				cookie := http.Cookie{Name: "wh", Value: "0", Path: "/", Expires: expiration}
 				http.SetCookie(w, &cookie)
 			}
-			p := indexPage{}
-			t, _ := template.ParseFiles("coreassets/settings/gohome.html")
-			t.Execute(w, p)
+			http.Redirect(w, r, "/", http.StatusFound)
+			//p := indexPage{}
+			//t, _ := template.ParseFiles("coreassets/settings/gohome.html")
+			//t.Execute(w, p)
 		}
 	default:
 		//load the settings page if no post value
@@ -874,7 +883,7 @@ func surprise(w http.ResponseWriter, r *http.Request) {
 
 	//check if worksafe+HTTPS cookie enabled.
 	filterHTTPS := false
-	worksafeHTTPSCookie, err := r.Cookie("ws")
+	worksafeHTTPSCookie, err := r.Cookie("wh")
 	if err != nil {
 		filterHTTPS = false
 	} else if worksafeHTTPSCookie.Value == "2" {
