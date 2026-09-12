@@ -1,5 +1,6 @@
-<?php    
-	session_start();
+<?php
+require_once __DIR__ . '/db_config.php';
+session_start();
 	if (!isset($_POST['feedback']))    
 	{    
 	  include 'form.html.php';    
@@ -24,32 +25,22 @@
 		}
 
 
-		$link = mysqli_connect('localhost', 'guest', 'qwer');
+		$db = getDbConnection();
 
-		if (!$link)
+		if (!$db)
 		{
 			$error = 'Cant connect to database.';
 			include 'error.html.php';
 			exit();
 		}
 
-		if (!mysqli_set_charset($link, 'utf8')) 
-		{ 
-		  $error = 'Unable to set database connection encoding.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
+		
 
-		if(!mysqli_select_db($link, 'wiby'))
-		{
-		  $error = 'Unable to locate the database.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
+		
  
 		//$feedback = str_replace("\'", "\'\'", $_POST['feedback']); //single quotes must be handled correctly
 		//$feedback = str_replace("\"", "\"\"", $feedback);//double quotes must be handled correctly
-	    $feedback = mysqli_real_escape_string($link, $_POST['feedback']);
+	    $feedback = db_escape_string($db, $_POST['feedback']);
 
 		$feedback = substr($feedback,0,8000); //don't allow user to post a longer string than 8k (also limited in form)
 
@@ -57,9 +48,9 @@
 		$sql = "INSERT INTO feedback (message) VALUES ('".$feedback."')";
 
 
-		if (!mysqli_query($link, $sql))   
+		if (!db_query($db, $sql))   
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 		  include 'error.html.php';  
 		  exit(); 
 		}

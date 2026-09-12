@@ -13,7 +13,9 @@
   </head>    
 
   <body>   
-	<?php echo $status; ?>
+	<?php
+require_once __DIR__ . '/db_config.php';
+echo $status; ?>
     <form action="tags.php" method="post"> 
       <div>
         <label for="tags">Tags:</label>

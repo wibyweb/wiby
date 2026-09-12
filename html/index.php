@@ -1,4 +1,5 @@
-<?php    
+<?php
+require_once __DIR__ . '/db_config.php';
 session_start();
 
 if (isset($_COOKIE['ws']) && htmlspecialchars($_COOKIE['ws']) == "0")
@@ -22,9 +23,9 @@ if (!isset($_REQUEST['q']))
 else    
 
 {    
-	$link = mysqli_connect('localhost', 'guest', 'qwer');
+	$db = getDbConnection();
 			
-	$query = mysqli_real_escape_string($link, $_GET['q']);
+	$query = db_escape_string($db, $_GET['q']);
 
 	$lim = 12;
 	
@@ -91,16 +92,16 @@ else
 		}else if ($redirect == "bm"){//if bing maps search
 			header('Location: '."http://www.bing.com/maps?q=$actualquery");
 		}else if ($redirect == "td"){
-			$additions = $additions."AND date > NOW() - INTERVAL 1 DAY ";
+			$additions = $additions."AND date > datetime('now', '-1 day') ";
 			$query = $actualquery;
 		}else if ($redirect == "tw"){
-			$additions = $additions."AND date > NOW() - INTERVAL 7 DAY ";
+			$additions = $additions."AND date > datetime('now', '-7 days') ";
 			$query = $actualquery;
 		}else if ($redirect == "tm"){
-			$additions = $additions."AND date > NOW() - INTERVAL 30 DAY ";
+			$additions = $additions."AND date > datetime('now', '-30 days') ";
 			$query = $actualquery;
 		}else if ($redirect == "ty"){
-			$additions = $additions."AND date > NOW() - INTERVAL 365 DAY ";
+			$additions = $additions."AND date > datetime('now', '-365 days') ";
 			$query = $actualquery;
 		}else{
 			header('Location: '."/?q=$actualquery");
@@ -128,7 +129,7 @@ else
 	}
 	else
 	{
-		$page = mysqli_real_escape_string($link, $_GET['p']);
+		$page = db_escape_string($db, $_GET['p']);
 		$offset = $page;
 		if($offset > 0)
 		{
@@ -137,26 +138,16 @@ else
 		$offset = $offset * $lim;
 	}
 	
-	if (!$link)
+	if (!$db)
 	{
 		$error = 'Cant connect to database.';
 		include 'error.html.php';
 		exit();
 	}
 
-	if (!mysqli_set_charset($link, 'utf8mb4'))
-	{ 
-	  $error = 'Unable to set database connection encoding.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
 	
-	if(!mysqli_select_db($link, 'wiby'))
-	{
-	  $error = 'Unable to locate the database.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
+	
 
 	$queryOriginal = $query;
 
@@ -232,8 +223,8 @@ else
 		$flags = checkformat($flags);
 	}
 
-	//$queryNoQuotes_SQLsafe = mysqli_real_escape_string($link, $queryNoQuotes);
-	//$flags = mysqli_real_escape_string($link, $flags);
+	//$queryNoQuotes_SQLsafe = db_escape_string($db, $queryNoQuotes);
+	//$flags = db_escape_string($db, $flags);
 	
 	$words  = explode(' ', $queryNoQuotesOrFlags);
 	$wordcount = 0;
@@ -332,9 +323,9 @@ else
 
 	//perform full text search FOR InnoDB or MyISAM STORAGE ENGINE
 	if(($exactMatch !== true || $flagssetbyuser > 0) && $urlDetected==0 && strpos($query, ' ') == true && $flagssetbyuser + $wordcount != $flagssetbyuser){
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = db_query($db, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$querytouse' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 20 WHEN MATCH(body) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) OR MATCH(description) AGAINST('$queryWithQuotes' IN BOOLEAN MODE) THEN 15 WHEN MATCH(title) AGAINST('$reqwordQuery' IN BOOLEAN MODE) THEN 14 WHEN MATCH(title) AGAINST('$querytouse' IN BOOLEAN MODE) THEN 13 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}else{
-		$outputFTS = mysqli_query($link, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
+		$outputFTS = db_query($db, "SELECT id, url, title, description, body FROM windex WHERE MATCH(tags, body, description, title, url) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) AND enable = '1' $additions ORDER BY CASE WHEN MATCH(tags) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 30 WHEN MATCH(title) AGAINST('$queryWithQuotesAndFlags' IN BOOLEAN MODE) THEN 20 END DESC, id DESC LIMIT $lim OFFSET $offset");
 	}
 
 	if($urlDetected == 1)
@@ -346,7 +337,7 @@ else
 	$pos = -1;
 
 	//lets put contents of the full text search into the array
-	while($row = mysqli_fetch_array($outputFTS))
+	while($row = $outputFTS->fetch(PDO::FETCH_NUM))
 	{
 		//put the contents of the URL column within the DB into an array
 		$id[] = $row[0];

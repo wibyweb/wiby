@@ -1,0 +1,28 @@
+```
+# Database
+*.sqlite.sql
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# PHP session files (if any)
+sess_*
+
+# Backup files
+*.bak
+*.backup
+```

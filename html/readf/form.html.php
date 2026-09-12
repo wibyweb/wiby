@@ -24,7 +24,9 @@
     <form action="feedback.php" method="post"> 
         <p>Some feedback awaiting review:</p><br><hr>  
 
-        <?php $i=0; ?> 
+        <?php
+require_once __DIR__ . '/db_config.php';
+$i=0; ?> 
         <?php foreach ($message as $submission): ?>  
 
           <blockquote><p>  

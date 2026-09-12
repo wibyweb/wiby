@@ -20,7 +20,9 @@
       <div>
 
         <label for="urls">List up to 100 URLs:</label><br>
-	<?php if(isset($_POST['urls'])) : ?>
+	<?php
+require_once __DIR__ . '/db_config.php';
+if(isset($_POST['urls'])) : ?>
             <textarea id="urls" name="urls" maxlength="40000" rows="10" cols="60" ><?php echo htmlspecialchars($_POST['urls'], ENT_QUOTES, 'UTF-8') ?></textarea>
 	<?php else : ?>
 	    <textarea id="urls" name="urls" maxlength="40000" rows="10" cols="60" ></textarea>

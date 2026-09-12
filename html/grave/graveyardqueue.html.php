@@ -18,7 +18,9 @@
     <form action="graveyard.php" method="post"> 
         <p>Some pages awaiting review:</p>  
 
-        <?php $i=0; ?> 
+        <?php
+require_once __DIR__ . '/db_config.php';
+$i=0; ?> 
         <?php foreach ($url as $pageurl): ?>  
 
           <blockquote><p>  

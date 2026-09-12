@@ -1,5 +1,6 @@
 <?php
-	session_start();
+require_once __DIR__ . '/db_config.php';
+session_start();
 	if($_SESSION["level"]!="admin")
 	{
 		echo "Access denied.";
@@ -11,60 +12,50 @@
 		exit();
 	}
 	
-	$link = mysqli_connect('localhost', 'approver', 'foobar');
+	$db = getDbConnection();
 
-	if (!$link)
+	if (!$db)
 	{
 		$error = 'Cant connect to database.';
 		include 'error.html.php';
 		exit();
 	}
 
-	if (!mysqli_set_charset($link, 'utf8')) 
-	{ 
-	  $error = 'Unable to set database connection encoding.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
 
-	if(!mysqli_select_db($link, 'wiby'))
-	{
-	  $error = 'Unable to locate the database.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
 	
 	if (isset($_POST['startid']) && $_SESSION["loadfeedback"]==false)    
 	{    
-		$startID = mysqli_real_escape_string($link, $_POST['startid']);
-		$endID = mysqli_real_escape_string($link, $_POST['endid']);
+		$startID = db_escape_string($db, $_POST['startid']);
+		$endID = db_escape_string($db, $_POST['endid']);
 	}	
 
 	$lim = 10000000000;
 	
 	if (isset($_POST['startid']) && $_SESSION["loadfeedback"]==false) //this is incase any new submissions are made during the review process, they will be ignored   
 	{  
-		$result = mysqli_query($link,"SELECT * FROM feedback WHERE id >= '".$startID."' AND id <= '".$endID."'");
+		$result = db_query($db,"SELECT * FROM feedback WHERE id >= '".$startID."' AND id <= '".$endID."'");
 		if(!$result)
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 		  include 'error.html.php';  
 		  exit(); 
 		}
 	}
 	else
 	{
-		$result = mysqli_query($link,"SELECT * FROM feedback LIMIT $lim");
+		$result = db_query($db,"SELECT * FROM feedback LIMIT $lim");
 		if(!$result)
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 		  include 'error.html.php';  
 		  exit(); 
 		}	
 	}
 
 	//lets put contents of index into an array
-	while($row = mysqli_fetch_array($result))
+	while($row = $result->fetch(PDO::FETCH_NUM))
 	{
 		$id[] = $row['id'];
 		$message[] = $row['message'];
@@ -79,10 +70,10 @@
 
 			if($_POST["drop$pageid"] == 'on')
 			{
-				$result2 = mysqli_query($link,"DELETE FROM feedback WHERE id = '".$pageid."'");
+				$result2 = db_query($db,"DELETE FROM feedback WHERE id = '".$pageid."'");
 				if(!$result2)
 				{
-				  $error = 'Error deleting from feedback: ' . mysqli_error($link);  
+				  $error = 'Error deleting from feedback: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}
@@ -97,7 +88,7 @@
 		unset($endID);		
 		unset($result);
 		unset($result2);
-		$link -> close();			
+		$db -> close();			
 		include 'feedback.php';
 		exit();
 	}

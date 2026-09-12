@@ -16,7 +16,9 @@
 
     <p> 
 
-      <?php echo $error; ?> 
+      <?php
+require_once __DIR__ . '/db_config.php';
+echo $error; ?> 
 	<br>
 	<br>
 	<b>Note: An SQL error will occur if the page is not typed exactly as seen in the search results.</b>

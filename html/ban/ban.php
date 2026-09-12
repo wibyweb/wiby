@@ -1,5 +1,6 @@
-<?php    
-	session_start();
+<?php
+require_once __DIR__ . '/db_config.php';
+session_start();
 	
 	if($_SESSION["authenticated"]!=true)
 	{
@@ -19,26 +20,21 @@
 		exit();
 	}
 	
-	$link = mysqli_connect('localhost', 'crawler', 'seekout');
-	if (!$link)
+	$db = getDbConnection();
+	if (!$db)
 	{
 		$error = 'Cant connect to database.';
 		include 'error.html.php';
 		exit();
 	}
 
-	if (!mysqli_set_charset($link, 'utf8')) 
-	{ 
-	  $error = 'Unable to set database connection encoding.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
 	
 	$urls = $_POST['urls'];
-	$urls = mysqli_real_escape_string($link, $_POST['urls']);
+	$urls = db_escape_string($db, $_POST['urls']);
 	$urls = str_replace("''", "%27", $urls);
 	$urls = str_replace(":443", "", $urls);				 
-	$delete = mysqli_real_escape_string($link, $_POST['delete']);
+	$delete = db_escape_string($db, $_POST['delete']);
 	if($delete == 'on')
 	{
 		$delete = 1;
@@ -68,21 +64,16 @@
 					exit();					
 				}
 				
-				if(!mysqli_select_db($link, 'wiby'))
-				{
-				  $error = 'Unable to locate the database.'; 
-				  include 'error.html.php'; 
-				  exit(); 
-				}
 				
-				$result = mysqli_query($link,"SELECT id, shard FROM windex WHERE url = '".$url."'");
+				
+				$result = db_query($db,"SELECT id, shard FROM windex WHERE url = '".$url."'");
 				if ($result === false)  
 				{
-				  $error = 'Error: ' . mysqli_error($link);  
+				  $error = 'Error: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}
-				while($row = mysqli_fetch_array($result))
+				while($row = $result->fetch(PDO::FETCH_NUM))
 				{
 					$idArray[] = $row['id'];
 					$shardArray[] = $row['shard'];
@@ -102,9 +93,9 @@
 					$sql = "UPDATE ws$shard SET enable = 0 WHERE id = $id AND url = '".$url."'";
 				}
 
-				if (!mysqli_query($link, $sql))   
+				if (!db_query($db, $sql))   
 				{
-				  $error = 'Error: ' . mysqli_error($link);  
+				  $error = 'Error: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}		
@@ -117,24 +108,19 @@
 				{
 					$sql = "UPDATE windex SET enable = 0 WHERE id = $id AND url = '".$url."'";
 				}
-				if (!mysqli_query($link, $sql))   
+				if (!db_query($db, $sql))   
 				{
-				  $error = 'Error: ' . mysqli_error($link);  
+				  $error = 'Error: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}	
 				
 				//log deletions
-				if(!mysqli_select_db($link, 'wibytemp'))
-				{
-				  $error = 'Unable to locate the wibytemp database.'; 
-				  include 'error.html.php'; 
-				  exit(); 
-				}
+				
 				$sql = "INSERT INTO rejected (url,user,type,date) VALUES ('".$url."','".$_SESSION["user"]."','".$delete."',now())";
-				if (!mysqli_query($link, $sql))   
+				if (!db_query($db, $sql))   
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link);  
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}				

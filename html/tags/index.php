@@ -1,6 +1,6 @@
 <?php
-
-	session_set_cookie_params(['samesite' => 'Strict']);
+require_once __DIR__ . '/db_config.php';
+session_set_cookie_params(['samesite' => 'Strict']);
 	session_start();
 
 	if ( !isset($_POST['pass']) || !isset($_POST['user']))    
@@ -27,38 +27,28 @@
 			}
 		}
 	
-		$link = mysqli_connect('localhost', 'approver', 'foobar');
-		$user = mysqli_real_escape_string($link, $_POST['user']);
-		$pass = mysqli_real_escape_string($link, $_POST['pass']);
+		$db = getDbConnection();
+		$user = db_escape_string($db, $_POST['user']);
+		$pass = db_escape_string($db, $_POST['pass']);
 
-		if (!$link)
+		if (!$db)
 		{
 			$error = 'Cant connect to database.';
 			include 'error.html.php';
 			exit();
 		}
-		if (!mysqli_set_charset($link, 'utf8')) 
-		{ 
-		  $error = 'Unable to set database connection encoding.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
-		if(!mysqli_select_db($link, 'wiby'))
-		{
-		  $error = 'Unable to locate the database.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
-		$loginresult = mysqli_query($link,"SELECT hash, attempts FROM accounts WHERE name = '$user';");
+		
+		
+		$loginresult = db_query($db,"SELECT hash, attempts FROM accounts WHERE name = '$user';");
 		if(!$loginresult)
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link); 
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 		  include 'error.html.php'; 
 		  exit(); 
 		}
 
 		//lets put contents of accounts into an array
-		while($rowaccounts = mysqli_fetch_array($loginresult))
+		while($rowaccounts = $loginresult->fetch(PDO::FETCH_NUM))
 		{
 			$hash[] = $rowaccounts['hash'];
 			$attempts[] = $rowaccounts['attempts'];
@@ -67,9 +57,9 @@
 		{
 			if($attempts[0]>0)
 			{
-				if (!mysqli_query($link, "UPDATE accounts SET attempts = '0' WHERE name = '$user';"))
+				if (!db_query($db, "UPDATE accounts SET attempts = '0' WHERE name = '$user';"))
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link);  
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 				  include 'error.html.php';  
 				  exit(); 
 				}				
@@ -82,9 +72,9 @@
 		}
 		else{
 			$attempt = $attempts[0] + 1;
-			if (!mysqli_query($link, "UPDATE accounts SET attempts = '$attempt' WHERE name = '$user';"))
+			if (!db_query($db, "UPDATE accounts SET attempts = '$attempt' WHERE name = '$user';"))
 			{
-			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 			  include 'error.html.php';  
 			  exit(); 
 			}

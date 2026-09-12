@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/db_config.php';
 session_start(); // this MUST be called prior to any output including whitespaces and line breaks!
 
 $GLOBALS['ct_recipient']   = 'YOU@EXAMPLE.COM'; // Change to your email address!

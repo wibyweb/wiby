@@ -1,4 +1,6 @@
-<?php header("Content-Type: application/json;charset=utf-8"); ?>
+<?php
+require_once __DIR__ . '/db_config.php';
+header("Content-Type: application/json;charset=utf-8"); ?>
 <?php $i=0; ?>[
 <?php if(isset($url)): ?>
 <?php foreach ($url as $storedresult): ?>

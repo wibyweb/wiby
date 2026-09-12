@@ -16,7 +16,9 @@
 		<form method="post"> 
 			<div>
 				<label for="url">url:</label>
-				<?php if(isset($_POST['url'])) : ?>
+				<?php
+require_once __DIR__ . '/db_config.php';
+if(isset($_POST['url'])) : ?>
 					<input type="text" id="url" name="url" value="<?php echo htmlspecialchars($_POST['url'], ENT_QUOTES, 'UTF-8') ?>" maxlength="400" >
 				<?php else : ?>
 					<input type="text" id="url" name="url" maxlength="400" >

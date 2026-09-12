@@ -16,7 +16,9 @@
 
     <p>    
 
-      <?php echo $output; ?>    
+      <?php
+require_once __DIR__ . '/db_config.php';
+echo $output; ?>    
 
     </p>    
 

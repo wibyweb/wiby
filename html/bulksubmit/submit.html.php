@@ -15,7 +15,9 @@
 
     <p>    
 
-      <?php echo $output; ?>
+      <?php
+require_once __DIR__ . '/db_config.php';
+echo $output; ?>
       <br><br>
       <a href="bulksubmit.php">Return to bulk submission page</a>
       <br><br>

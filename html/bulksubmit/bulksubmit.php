@@ -1,5 +1,6 @@
 <?php
-	session_start();
+require_once __DIR__ . '/db_config.php';
+session_start();
 	
 	if($_SESSION["authenticated"]!=true)
 	{
@@ -19,33 +20,23 @@
 		exit();
 	} 	
 	
-	$link = mysqli_connect('localhost', 'guest', 'qwer');
-	if (!$link)
+	$db = getDbConnection();
+	if (!$db)
 	{
 		$error = 'Cant connect to database.';
 		include 'error.html.php';
 		exit();
 	}
 
-	if (!mysqli_set_charset($link, 'utf8')) 
-	{ 
-	  $error = 'Unable to set database connection encoding.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
 
-	if(!mysqli_select_db($link, 'wiby'))
-	{
-	  $error = 'Unable to locate the database.'; 
-	  include 'error.html.php'; 
-	  exit(); 
-	}
+	
 	
 	$urls = $_POST['urls'];
-	$urls = mysqli_real_escape_string($link, $_POST['urls']);
+	$urls = db_escape_string($db, $_POST['urls']);
 	$urls = str_replace("''", "%27", $urls);
 	$urls = str_replace(":443", "", $urls);			
-	$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
+	$worksafe = db_escape_string($db, $_POST['worksafe']);
 	//$worksafe = str_replace("\"", "\"\"", $worksafe);	
 	if($worksafe == 'on')
 	{
@@ -88,9 +79,9 @@
 			}
 			$i++;
 		}
-		if (!mysqli_query($link, $sql))   
+		if (!db_query($db, $sql))   
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 		  include 'error.html.php';  
 		  exit(); 
 		}

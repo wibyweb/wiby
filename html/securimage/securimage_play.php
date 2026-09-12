@@ -1,5 +1,5 @@
 <?php
-
+require_once __DIR__ . '/db_config.php';
 /**
  * Project:     Securimage: A PHP class for creating and managing form CAPTCHA images<br />
  * File:        securimage_play.php<br />

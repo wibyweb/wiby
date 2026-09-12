@@ -1,5 +1,6 @@
-<?php    
-	session_start();
+<?php
+require_once __DIR__ . '/db_config.php';
+session_start();
 	
 	if($_SESSION["authenticated"]!=true)
 	{
@@ -14,44 +15,34 @@
 
 	else    
 	{    
-		$link = mysqli_connect('localhost', 'crawler', 'seekout');
+		$db = getDbConnection();
 
-		if (!$link)
+		if (!$db)
 		{
 			$error = 'Cant connect to database.';
 			include 'error.html.php';
 			exit();
 		}
 
-		if (!mysqli_set_charset($link, 'utf8')) 
-		{ 
-		  $error = 'Unable to set database connection encoding.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
-
-		if(!mysqli_select_db($link, 'wiby'))
-		{
-		  $error = 'Unable to locate the database.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
 		
-		$url = mysqli_real_escape_string($link, $_POST['url']);
+
+		
+		
+		$url = db_escape_string($db, $_POST['url']);
 		$status = "";
 		
 		if( isset($_POST['tags']))
 		{			
-			$tags = mysqli_real_escape_string($link, $_POST['tags']);
+			$tags = db_escape_string($db, $_POST['tags']);
 			
-			$result = mysqli_query($link,"SELECT id, shard FROM windex WHERE url = '".$url."'");
+			$result = db_query($db,"SELECT id, shard FROM windex WHERE url = '".$url."'");
 			if ($result === false)  
 			{
-			  $error = 'Error: ' . mysqli_error($link);  
+			  $error = 'Error: ' . $db->errorInfo()[2];  
 			  include 'error.html.php';  
 			  exit(); 
 			}	
-			while($row = mysqli_fetch_array($result))
+			while($row = $result->fetch(PDO::FETCH_NUM))
 			{
 				$idArray[] = $row['id'];
 				$shardArray[] = $row['shard'];
@@ -60,27 +51,27 @@
 			$shard = $shardArray[0];							
 			
 			if($tags==""){
-				$result = mysqli_query($link,"UPDATE windex SET tags = NULL WHERE id = $id AND url = '".$url."'");
+				$result = db_query($db,"UPDATE windex SET tags = NULL WHERE id = $id AND url = '".$url."'");
 			}
 			else{
-				$result = mysqli_query($link,"UPDATE windex SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
+				$result = db_query($db,"UPDATE windex SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
 			}
 			if ($result === false)   
 			{
-			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 			  include 'error.html.php';  
 			  exit(); 
 			}
 			
 			if($tags==""){
-				$result = mysqli_query($link,"UPDATE ws$shard SET tags = NULL WHERE id = $id AND url = '".$url."'");
+				$result = db_query($db,"UPDATE ws$shard SET tags = NULL WHERE id = $id AND url = '".$url."'");
 			}
 			else{
-				$result = mysqli_query($link,"UPDATE ws$shard SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
+				$result = db_query($db,"UPDATE ws$shard SET tags = '".$tags."' WHERE id = $id AND url = '".$url."'");
 			}
 			if ($result === false)   
 			{
-			  $error = 'Error fetching index: ' . mysqli_error($link);  
+			  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 			  include 'error.html.php';  
 			  exit(); 
 			}	
@@ -89,15 +80,15 @@
 			unset($_POST['tags']);
 		}		
 	    
-		$result = mysqli_query($link,"SELECT tags FROM windex WHERE url = '".$url."'");
+		$result = db_query($db,"SELECT tags FROM windex WHERE url = '".$url."'");
 		if ($result === false)  
 		{
-		  $error = 'Error fetching index: ' . mysqli_error($link);  
+		  $error = 'Error fetching index: ' . $db->errorInfo()[2];  
 		  include 'error.html.php';  
 		  exit(); 
 		}
 
-		while($row = mysqli_fetch_array($result))
+		while($row = $result->fetch(PDO::FETCH_NUM))
 		{
 			$tagsArray[] = $row['tags'];
 		}

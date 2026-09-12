@@ -31,7 +31,9 @@
       </div>     
       <div><input type="submit" value="Submit"/></div> 
       <br>Accounts:<br>
-      <?php $i=0; ?> 
+      <?php
+require_once __DIR__ . '/db_config.php';
+$i=0; ?> 
       <?php foreach ($db_name as $username): ?>
         <blockquote><p><?php echo $username ." (  level: ". $db_level[$i] ." |  attempts: ". $db_attempts[$i] ." |  updated: ". $db_updated[$i] ." )"; ?></p></blockquote>
         <?php $i++; ?>

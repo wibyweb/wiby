@@ -1,7 +1,9 @@
 <!DOCTYPE html>    
 <html> 
    
-<?php session_start(); ?>
+<?php
+require_once __DIR__ . '/db_config.php';
+session_start(); ?>
 
   <head>    
     <title>Settings</title>   

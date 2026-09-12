@@ -23,7 +23,9 @@
 
     <p>    
       Thank you for submitting feedback:<blockquote><br>
-      <pre><?php echo $output; ?></pre>
+      <pre><?php
+require_once __DIR__ . '/db_config.php';
+echo $output; ?></pre>
       </blockquote><br><br>
       <a href="/about/">Return to About page</a>
       <br><br>

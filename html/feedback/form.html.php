@@ -15,7 +15,9 @@
       <div>
 
         <label for="feedback">Feedback:</label><br>   
-	<?php if(isset($_POST['feedback'])) : ?>
+	<?php
+require_once __DIR__ . '/db_config.php';
+if(isset($_POST['feedback'])) : ?>
             <textarea id="feedback" name="feedback" maxlength="8000" rows="10" cols="60"><?php echo htmlspecialchars($_POST['feedback'], ENT_QUOTES, 'UTF-8') ?></textarea>
 	<?php else : ?>
 	    <textarea id="feedback" name="feedback" maxlength="8000" rows="10" cols="60"></textarea>

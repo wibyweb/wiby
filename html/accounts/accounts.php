@@ -1,5 +1,6 @@
-<?php    
-	session_start();
+<?php
+require_once __DIR__ . '/db_config.php';
+session_start();
 	
 	if($_SESSION["authenticated"]!=true)
 	{
@@ -7,43 +8,33 @@
 		exit();
 	}else    
 	{    
-		$link = mysqli_connect('localhost', 'approver', 'foobar');
+		$db = getDbConnection();
 
-		if (!$link)
+		if (!$db)
 		{
 			$error = 'Cant connect to database.';
 			include 'error.html.php';
 			exit();
 		}
 
-		if (!mysqli_set_charset($link, 'utf8')) 
-		{ 
-		  $error = 'Unable to set database connection encoding.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
+		
 
-		if(!mysqli_select_db($link, 'wiby'))
-		{
-		  $error = 'Unable to locate the database.'; 
-		  include 'error.html.php'; 
-		  exit(); 
-		}
+		
 
 		//get info for admin
 		if (((!isset($_POST['name']) && !isset($_POST['password'])) || $_SESSION["loadadmin"]==true) && $_SESSION["level"]=="admin")    
 		{  
 			$_SESSION["loadadmin"]=false;
-			$adminresult = mysqli_query($link,"SELECT name, level, attempts, updated FROM accounts");
+			$adminresult = db_query($db,"SELECT name, level, attempts, updated FROM accounts");
 			if(!$adminresult)
 			{
-			  $error = 'Error fetching index: ' . mysqli_error($link); 
+			  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 			  include 'error.html.php'; 
 			  exit(); 
 			}
 
 			//put contents of accounts into an array
-			while($row = mysqli_fetch_array($adminresult))
+			while($row = $adminresult->fetch(PDO::FETCH_NUM))
 			{
 				$db_name[] = $row['name'];
 				$db_level[] = $row['level'];
@@ -70,8 +61,8 @@
 					exit();
 				}
 
-			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
-				$post_password = mysqli_real_escape_string($link, $_POST['password']);
+			    $post_name = db_escape_string($db, $_POST['name']);
+				$post_password = db_escape_string($db, $_POST['password']);
 				$hash = password_hash($post_password, PASSWORD_DEFAULT);
 				if($_POST['level']==1){
 					$post_level = "guardian";
@@ -79,10 +70,10 @@
 					$post_level = "admin";
 				}
 
-				$adminresult = mysqli_query($link,"INSERT INTO accounts (name,hash,level) VALUES('".$post_name."','".$hash."','".$post_level."')");
+				$adminresult = db_query($db,"INSERT INTO accounts (name,hash,level) VALUES('".$post_name."','".$hash."','".$post_level."')");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -100,12 +91,12 @@
 					exit();
 				}
 
-			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
+			    $post_name = db_escape_string($db, $_POST['name']);
 
-				$adminresult = mysqli_query($link,"DELETE FROM accounts WHERE name = '".$post_name."'");
+				$adminresult = db_query($db,"DELETE FROM accounts WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -123,13 +114,13 @@
 					exit();
 				}
 
-			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
-				$post_password = mysqli_real_escape_string($link, $_POST['password']);
+			    $post_name = db_escape_string($db, $_POST['name']);
+				$post_password = db_escape_string($db, $_POST['password']);
 				$hash = password_hash($post_password, PASSWORD_DEFAULT);
-				$adminresult = mysqli_query($link,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$post_name."'");
+				$adminresult = db_query($db,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -147,18 +138,18 @@
 					exit();
 				}
 
-			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
-				$post_level = mysqli_real_escape_string($link, $_POST['action']);
+			    $post_name = db_escape_string($db, $_POST['name']);
+				$post_level = db_escape_string($db, $_POST['action']);
 				if($_POST['level']==1){
 					$post_level = "guardian";
 				}else if($_POST['level']==2){
 					$post_level = "admin";
 				}
 
-				$adminresult = mysqli_query($link,"UPDATE accounts SET level = '".$post_level."' WHERE name = '".$post_name."'");
+				$adminresult = db_query($db,"UPDATE accounts SET level = '".$post_level."' WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -176,12 +167,12 @@
 					exit();
 				}
 
-			    $post_name = mysqli_real_escape_string($link, $_POST['name']);
+			    $post_name = db_escape_string($db, $_POST['name']);
 
-				$adminresult = mysqli_query($link,"UPDATE accounts SET attempts = 0 WHERE name = '".$post_name."'");
+				$adminresult = db_query($db,"UPDATE accounts SET attempts = 0 WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -199,12 +190,12 @@
 					exit();
 				}
 
-		    	$post_name = mysqli_real_escape_string($link, $_POST['name']);
+		    	$post_name = db_escape_string($db, $_POST['name']);
 
-				$adminresult = mysqli_query($link,"UPDATE accounts SET attempts = 5 WHERE name = '".$post_name."'");
+				$adminresult = db_query($db,"UPDATE accounts SET attempts = 5 WHERE name = '".$post_name."'");
 				if(!$adminresult)
 				{
-				  $error = 'Error fetching index: ' . mysqli_error($link); 
+				  $error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				  include 'error.html.php'; 
 				  exit(); 
 				}
@@ -229,13 +220,13 @@
 				exit();
 			}
 
-			$post_password = mysqli_real_escape_string($link, $_POST['password']);
+			$post_password = db_escape_string($db, $_POST['password']);
 			$hash = password_hash($post_password, PASSWORD_DEFAULT);
 
-			$result = mysqli_query($link,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$_SESSION["user"]."'");
+			$result = db_query($db,"UPDATE accounts SET hash = '".$hash."' WHERE name = '".$_SESSION["user"]."'");
 			if(!$result)
 			{
-				$error = 'Error fetching index: ' . mysqli_error($link); 
+				$error = 'Error fetching index: ' . $db->errorInfo()[2]; 
 				include 'error.html.php'; 
 				exit(); 
 			}
