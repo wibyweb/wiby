@@ -35,7 +35,7 @@
 		$endID = mysqli_real_escape_string($link, $_POST['endid']);
 	}	
 
-	$lim = 100; //note, setting this too high will cause PHP Warning:  Unknown: Input variables exceeded 1000
+	$lim = 10; //note, setting this too high will cause PHP Warning:  Unknown: Input variables exceeded 1000
 	
 	if (isset($_POST['startid']) && $_SESSION["loadgraveyard"]==false) //this is incase any new submissions are made during the review process, they will be ignored   
 	{  
@@ -191,3 +191,5 @@
 		include 'graveyardqueue.html.php';
 	}
 ?>
+
+
