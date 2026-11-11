@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.18, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.4.11, for Linux (x86_64)
 --
 -- Host: localhost    Database: wiby
 -- ------------------------------------------------------
--- Server version	8.0.18
+-- Server version	8.4.11-0ubuntu0.26.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -26,7 +26,7 @@ CREATE TABLE `accounts` (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci NOT NULL,
   `hash` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `level` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `attempts` int(11) DEFAULT '0',
+  `attempts` int DEFAULT '0',
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
@@ -49,7 +49,7 @@ DROP TABLE IF EXISTS `feedback`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `feedback` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -73,13 +73,13 @@ DROP TABLE IF EXISTS `graveyard`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `graveyard` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text,
   `worksafe` tinyint(1) DEFAULT NULL,
   `reserved` text,
   `reservetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -99,23 +99,23 @@ DROP TABLE IF EXISTS `indexqueue`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `indexqueue` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `worksafe` tinyint(1) DEFAULT NULL,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `surprise` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `task` tinyint(4) DEFAULT NULL,
+  `updatable` int DEFAULT '1',
+  `task` tinyint DEFAULT NULL,
   `crawl_tree` text,
   `crawl_family` text,
-  `crawl_depth` int(11) DEFAULT NULL,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
+  `crawl_depth` int DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
+  `crawl_repeat` tinyint DEFAULT NULL,
   `force_rules` tinyint(1) DEFAULT NULL,
-  `crawler_id` int(11) DEFAULT NULL,
+  `crawler_id` int DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -135,14 +135,14 @@ DROP TABLE IF EXISTS `reviewqueue`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reviewqueue` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` mediumtext,
   `worksafe` tinyint(1) DEFAULT NULL,
   `reserved` mediumtext,
   `reservetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -162,7 +162,7 @@ DROP TABLE IF EXISTS `windex`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `windex` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -172,12 +172,12 @@ CREATE TABLE `windex` (
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `surprise` tinyint(1) DEFAULT NULL,
   `http` tinyint(1) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
+  `updatable` int DEFAULT '1',
   `worksafe` tinyint(1) DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
   `crawl_repeat` tinyint(1) DEFAULT NULL,
   `force_rules` tinyint(1) DEFAULT NULL,
   `enable` tinyint(1) DEFAULT NULL,
@@ -185,7 +185,7 @@ CREATE TABLE `windex` (
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `fault` tinyint(1) DEFAULT '0',
-  `shard` int(11) DEFAULT '0',
+  `shard` int DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `title` (`title`),
   FULLTEXT KEY `url` (`url`),
@@ -214,7 +214,7 @@ DROP TABLE IF EXISTS `ws0`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ws0` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -222,22 +222,22 @@ CREATE TABLE `ws0` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
+  `surprise` tinyint DEFAULT NULL,
+  `http` tinyint DEFAULT NULL,
+  `updatable` int DEFAULT '1',
+  `worksafe` tinyint DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
+  `crawl_repeat` tinyint DEFAULT NULL,
+  `force_rules` tinyint DEFAULT NULL,
+  `enable` tinyint DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT '0',
+  `fault` tinyint DEFAULT '0',
+  `shard` int DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
@@ -266,7 +266,7 @@ DROP TABLE IF EXISTS `ws1`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ws1` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -274,22 +274,22 @@ CREATE TABLE `ws1` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
+  `surprise` tinyint DEFAULT NULL,
+  `http` tinyint DEFAULT NULL,
+  `updatable` int DEFAULT '1',
+  `worksafe` tinyint DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
+  `crawl_repeat` tinyint DEFAULT NULL,
+  `force_rules` tinyint DEFAULT NULL,
+  `enable` tinyint DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT '0',
+  `fault` tinyint DEFAULT '0',
+  `shard` int DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
@@ -318,7 +318,7 @@ DROP TABLE IF EXISTS `ws2`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ws2` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -326,22 +326,22 @@ CREATE TABLE `ws2` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
+  `surprise` tinyint DEFAULT NULL,
+  `http` tinyint DEFAULT NULL,
+  `updatable` int DEFAULT '1',
+  `worksafe` tinyint DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
+  `crawl_repeat` tinyint DEFAULT NULL,
+  `force_rules` tinyint DEFAULT NULL,
+  `enable` tinyint DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT '0',
+  `fault` tinyint DEFAULT '0',
+  `shard` int DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
@@ -370,7 +370,7 @@ DROP TABLE IF EXISTS `ws3`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ws3` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `url_noprefix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
@@ -378,22 +378,22 @@ CREATE TABLE `ws3` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `language` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `surprise` tinyint(4) DEFAULT NULL,
-  `http` tinyint(4) DEFAULT NULL,
-  `updatable` int(11) DEFAULT '1',
-  `worksafe` tinyint(4) DEFAULT NULL,
+  `surprise` tinyint DEFAULT NULL,
+  `http` tinyint DEFAULT NULL,
+  `updatable` int DEFAULT '1',
+  `worksafe` tinyint DEFAULT NULL,
   `crawl_tree` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `crawl_family` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `crawl_pages` int(11) DEFAULT NULL,
-  `crawl_type` int(11) DEFAULT NULL,
-  `crawl_repeat` tinyint(4) DEFAULT NULL,
-  `force_rules` tinyint(4) DEFAULT NULL,
-  `enable` tinyint(4) DEFAULT NULL,
+  `crawl_pages` int DEFAULT NULL,
+  `crawl_type` int DEFAULT NULL,
+  `crawl_repeat` tinyint DEFAULT NULL,
+  `force_rules` tinyint DEFAULT NULL,
+  `enable` tinyint DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approver` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `fault` tinyint(4) DEFAULT '0',
-  `shard` int(11) DEFAULT '0',
+  `fault` tinyint DEFAULT '0',
+  `shard` int DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `main` (`tags`,`title`,`body`,`description`,`url`),
   FULLTEXT KEY `title` (`title`),
@@ -423,4 +423,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-08-09 23:41:07
+-- Dump completed on 2026-11-09 22:38:31
