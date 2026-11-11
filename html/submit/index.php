@@ -9,7 +9,11 @@
 	  echo "It doesn't look like you submitted a valid URL.";
 	  include 'form.html.php';
 	} 
-
+	else if(!isset($_SESSION["authenticated"]) && (!isset($_POST['question']) || $_POST['question'] != '9'))
+	{
+	  echo "Put the correct answer for the challenge question";
+	  include 'form.html.php';
+	}
 	else    
 
 	{   
@@ -73,8 +77,8 @@
 		{
 			$url = "http://" . $url;
 		}
-		$url = str_replace("/index.html", "/", $url);
-		//$url = str_replace("/index.htm", "/", $url);//turns out cant reliably do the same for .htm
+		$url = str_ireplace("/index.html", "/", $url);
+		//$url = str_ireplace("/index.htm", "/", $url);//turns out cant reliably do the same for .htm
 
 		$sql = "INSERT INTO reviewqueue (url,worksafe) VALUES ('".$url."','".$worksafe."')";
 

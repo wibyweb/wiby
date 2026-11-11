@@ -40,6 +40,10 @@
 					<a href="#" onclick="document.getElementById('captcha').src = '/securimage/securimage_show.php?' + Math.random(); return false">Reload Image</a>
 				</div>
 				<p class="pin">* Cookies must be enabled for the captcha.</p>
+				<div>
+					<label for="question"><img src="challenge.gif"></label>
+					<input type="text" size="5" id="question" name="question" value="<?php echo htmlspecialchars($_POST['question'], ENT_QUOTES, 'UTF-8') ?>" maxlength="50" >
+				</div>	
 			<?php endif; ?>
 			<br>
 			<div><input type="submit" value="Submit"/></div>    
