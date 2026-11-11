@@ -36,7 +36,7 @@
 
 	    <a class="tlink" href="<?php echo htmlspecialchars($pageurl, ENT_QUOTES, 'UTF-8'); ?>" style="font-size: 17px;" target="_blank"><?php echo htmlspecialchars($pageurl, ENT_QUOTES, 'UTF-8'); ?></a><br>
 	    <?php if($worksafe[$i] == '1'): ?>
-		[Worksafe<input type="checkbox" id="worksafe <?php echo $id[$i] ?>" name="worksafe<?php echo $id[$i] ?>" class="cbWorksafe" checked="checked">]
+		[Worksafe<input type="checkbox" id="worksafe<?php echo $id[$i] ?>" name="worksafe<?php echo $id[$i] ?>" class="cbWorksafe" checked="checked">]
 	    <?php else: ?>
 		[Worksafe<input type="checkbox" id="worksafe<?php echo $id[$i] ?>" name="worksafe<?php echo $id[$i] ?>" class="cbWorksafe">]
 	    <?php endif; ?>
