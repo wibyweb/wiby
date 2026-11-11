@@ -9,7 +9,11 @@
 	  echo "It doesn't look like you submitted anything.";
 	  include 'form.html.php';
 	} 
-
+	else if((!isset($_POST['question']) || $_POST['question'] != '9'))
+	{
+	  echo "Put the correct answer for the challenge question";
+	  include 'form.html.php';
+	}
 	else    
 
 	{   

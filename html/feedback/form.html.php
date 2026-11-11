@@ -4,8 +4,8 @@
 
   <head>    
     <title>Wiby Feedback Form</title>   
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>  
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
     <LINK REL=STYLESHEET HREF="/styles.css" TYPE="text/css">  
   </head>    
 
@@ -31,7 +31,11 @@
 	  <input type="text" name="captcha_code" size="10" maxlength="6" />
 	  <a href="#" onclick="document.getElementById('captcha').src = '/securimage/securimage_show.php?' + Math.random(); return false">Reload Image</a>
           <br><p class="pin">* Cookies must be enabled for the captcha.</p>
-        </div><br>
+        </div>
+	<div>
+	  <label for="question"><img src="challenge.gif"></label>
+	  <input type="text" size="5" id="question" name="question" value="<?php echo htmlspecialchars($_POST['question'], ENT_QUOTES, 'UTF-8') ?>" maxlength="50" >
+	</div><br>
       <div><input type="submit" value="Submit"/></div>    
 
     </form>    
