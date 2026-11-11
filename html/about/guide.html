@@ -41,7 +41,7 @@ pre { width:700px; white-space: pre-wrap; word-wrap: break-word; }
 <a href="guide.html#scale">Scaling</a>
 
 <h2><a name="overview">Overview</a></h2>
-Wiby is a search engine for the World Wide Web. The source code is now free as of July 8, 2022 under the GPLv2 license. I have been longing for this day! You can watch a quick demo <a href="https://youtu.be/nCfWJqNBqHo">here</a>.
+Wiby is a search engine for the World Wide Web. The source code is now free as of July 8, 2022 under the GPLv2 license. You can watch a quick demo <a href="https://youtu.be/nCfWJqNBqHo">here</a>.
 <br>
 <br>
 It includes a web interface allowing guardians to control where, how far, and how often it crawls websites and follows hyperlinks. The search index is stored inside of an InnoDB full-text index.
@@ -96,19 +96,14 @@ I hope it can cultivate free and independent search engines, ensuring accessibil
 I can only provide manual install instructions at this time. 
 <br>
 <br>
-Note that while the software is functionally complete, it is still in beta. Anticipate that some bugs will be discovered now that the source is released. 
 Ensure that you isolate the search engine from your other important services, and if you are running parts of it out of your home, keep the servers 
-on a separate VLAN. Make sure this VLAN cannot access your router or switch interface. Continue this practise even when the software reaches "1.0".
+on a separate VLAN. Make sure this VLAN cannot access your router or switch interface.
 <br>
 <br>
 If you have created a "LAMP", or rather a "LEMP" server before, this isn't much more complicated. If you've never done that, I suggest you find a "LEMP" tutorial.
 <br><br>
 <h3>Build a LEMP server</h3>
-Digital Ocean tutorials are usually pretty good so here is a link to one for <a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-20-04">Ubuntu 20</a> and 
-<a href="https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-ubuntu-22-04">Ubuntu 22</a>.
-<br>
-<br>
-For the sake of simplicity, assume all instructions are for Ubuntu 20 or 22. If you are on a different distro, modify the install steps accordingly to suit your distro.
+For the sake of simplicity, assume all instructions are for Ubuntu 26. If you are on a different distro, modify the install steps accordingly to suit your distro. Go ahead and find a tutorial on creating a LEMP server, preferably on Ubuntu, then continue with the guide. 
 <br>
 <br>
 If you don't have a physical server, you can rent computing space by looking for a "VPS provider". This virtual computer will be your reverse proxy, and if you want, it can host everything else too.
@@ -135,10 +130,6 @@ This could happen if you are not using Ubuntu. You might have to locate the corr
 <h3>Build the core server application:</h3>
 The core application is located inside the go folder. Run the following commands after copying the files over to your preferred location:
 <pre>
-For Ubuntu 20:
-go get -u github.com/go-sql-driver/mysql
-
-For Ubuntu 22 OR latest Golang versions:
 go install github.com/go-sql-driver/mysql@latest
 go mod init mysql
 go get github.com/go-sql-driver/mysql
@@ -171,8 +162,6 @@ sql_mode = "NO_BACKSLASH_ESCAPES"
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_520_ci
 innodb_ft_enable_stopword=0
-skip-character-set-client-handshake
-default-authentication-plugin=mysql_native_password
 wait_timeout = 800
 
 #memory use settings, you should adjust this based on your hardware
@@ -274,7 +263,7 @@ You should learn nginx configuration on your own, this template is just to assis
 If you are using only the php version, comment all "core app" location entries to revert Wiby search to the php only version.
 <br>
 Make sure ssl_certificate and ssl_certificate_key have the path for your SSL files instead of the example paths. If you don't want to use SSL, just remove the server {} configuration for SSL connections (on port 443). 
-Also the example file references php7.4-fpm.sock, so if you are using a different version remember to update that as well (such as php8.1-fpm.sock on Ubuntu 22).
+Also the example file references php8.5-fpm.sock, so if you are using a different version remember to update that as well.
 <br>
 <br>
 <h3>Start the Refresh Scheduler</h3>
@@ -482,11 +471,10 @@ The search results per page limit is 12, and should evenly divide 'into' OR 'by'
  As an example, if you have three computers with a 4-core CPU on each, you can <a href="guide.html#create">create</a> up to 12 shard tables, then point the tracker to use 4 shards on each computer for maximum use. Another option would be to keep the default four shard and four duplicate connection configuration, host the core application and rt on each computer, and use nginx to load balance traffic between them. 
 <br>
 <br>
-The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN 
-the replicas are all connected on. See the <a href="guide.html#replica">instructions</a> to setup a MySQL replica, and <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql">here</a> is a longer tutorial on MySQL replicas should you need more info.
+The reverse proxy and replica servers can be connected through a VPN such as wireguard or openvpn, however the IPs for servers.csv should be the local IPs for the LAN the replicas are all connected on. See the <a href="guide.html#replica">instructions</a> to setup a MySQL replica.
 <br>
 <br>
-Indicate the number of shards in the 'shards' file that the crawler references (four are already preconfigured). If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. To create more shard tables, see <a href="guide.html#create">this</a> section. If for some reason you only want to host specific shard tables on a replica, you can use <a href="https://mydbops.wordpress.com/2021/09/24/replication-filters-in-mysql-an-overview/">replication filtering</a>.
+Indicate the number of shards in the 'shards' file that the crawler references (four are already preconfigured). If for some reason you need to rebuild/rebalance the shard tables, see the directions <a href="guide.html#balance">here</a>. To create more shard tables, see <a href="guide.html#create">this</a> section. 
 <br>
 <br>
 <br>
@@ -505,7 +493,7 @@ binlog_format = mixed
 In MySQL on the primary server, create a user for replica access, replace the IP 10.0.0.% to that for your own VPN IP and allowed subnet:
 <pre>
 create user 'slave_user'@'10.0.0.%' identified by 'd0gemuchw0w';
-GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%';
+GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'10.0.0.%';
 FLUSH PRIVILEGES;
 </pre>
 On the replica server, after installing MySQL, ensure the following my.cnf configuration, set the server-id as a unique id for each replica, then restart MySQL:
@@ -520,12 +508,10 @@ default-character-set = utf8mb4
 max_connections = 2000
 ft_min_word_len=1
 sql_mode = "NO_BACKSLASH_ESCAPES"
-#character-set-client-handshake = FALSE
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_520_ci
 innodb_ft_enable_stopword=0
-skip-character-set-client-handshake
-default-authentication-plugin=mysql_native_password
+mysql_native_password=ON
 wait_timeout = 800
 
 #memory use settings, you should adjust this based on your hardware
@@ -547,12 +533,12 @@ To export the database to the replica server, on the primary server, stop the we
 <pre>
 USE wiby;
 FLUSH TABLES WITH READ LOCK;
-SHOW MASTER STATUS;
+SHOW BINARY LOG STATUS;
 
 +------------------+----------+--------------+------------------+-------------------+
 | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
 +------------------+----------+--------------+------------------+-------------------+
-| mysql-bin.000055 | 15871269 | wiby         |                  |                   |
+| mysql-bin.000264 | 620      | wiby         |                  |                   |
 +------------------+----------+--------------+------------------+-------------------+
 </pre>
 Keep the above session window open (or run it in a screen session).
@@ -579,17 +565,17 @@ mysql -u root -p wiby < wiby.sql
 </pre>
 Login to MySQL and type the following but replace the primary_server_ip, MASTER_LOG_FILE, and MASTER_LOG_POS with yours from the table:
 <pre>
-CHANGE MASTER TO MASTER_HOST='primary_server_ip',MASTER_USER='slave_user', MASTER_PASSWORD='d0gemuchw0w', MASTER_LOG_FILE='mysql-bin.000055', MASTER_LOG_POS=15871269;
-START SLAVE;
+CHANGE REPLICATION SOURCE TO SOURCE_HOST='10.9.0.1',SOURCE_USER='slave_user', SOURCE_PASSWORD='d0gemuchw0w', SOURCE_LOG_FILE='mysql-bin.000264', SOURCE_LOG_POS=620, GET_SOURCE_PUBLIC_KEY=1;
+START REPLICA;
 </pre>
 To verify that the replica is syncronized, type the following on the replica in MySQL:
 <pre>
-SHOW SLAVE STATUS\G
+SHOW REPLICA STATUS\G
 </pre>
 Make sure that:
 <pre>
-Slave_IO_Running: Yes
-Slave_SQL_Running: Yes
+Replica_IO_Running: Yes
+Replica_SQL_Running: Yes
 </pre>
 In MySQL on the replica, create the <a name="replicaaccounts">accounts required</a> for the replication tracker and core application. 
 Note that the remote_guest account will allow connections from any outside machine. Make sure your replica is protected behind a firewall.<br>
@@ -675,11 +661,17 @@ The crawler stores a maximum of 80KB worth of text from the body of each webpage
 This will affect the total size of the index and overall search speeds.
 <br>
 <br>
-Over time as more pages are crawled and updated, search indexes may need to be rebuilt to ensure optimal search speeds. I do this on a yearly basis and it makes a tangible difference. You can do this by either exporting and reimporting the database, or by altering the windex and shard tables to use the same storage engine they are already using. For example:
+Over time as more pages are crawled and updated, search indexes may need to be rebuilt to ensure optimal search speeds. I do this semiannually and it makes a tangible difference. The simplest way to do this is to export and re-import the database. If you are using replicas, you can do it just on them instead. For example (on a replica):
 <pre>
-ALTER TABLE windex ENGINE = InnoDB;
+mysql
+STOP REPLICA;
+exit
+mysqldump -u root -p wiby > wiby.sql
+mysql -u root -p wiby < wiby.sql
+mysql
+START REPLICA;
+SHOW REPLICA STATUS\G
 </pre>
-Keep in mind you may need to resynch your replicas when you do this.
 </p>
 </blockquote>
 </body>    
