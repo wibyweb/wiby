@@ -35,12 +35,12 @@
 		  exit(); 
 		}
  
-	    $url = mysqli_real_escape_string($link, $_POST['url']);
-	    $url = str_replace("''", "%27", $url); 
-	    $url_noprefix = str_ireplace("http://","", $url);
-	    $url_noprefix = str_ireplace("https://","", $url);
-	    $url_noprefix = str_ireplace("http://www.","", $url);
-	    $url_noprefix = str_ireplace("https://www.","", $url);
+		$url = mysqli_real_escape_string($link, $_POST['url']);
+		$url = str_replace("''", "%27", $url); 
+		$url_noprefix = str_ireplace("https://www.","", $url);
+		$url_noprefix = str_ireplace("http://www.","", $url_noprefix);
+		$url_noprefix = str_ireplace("https://","", $url_noprefix);
+		$url_noprefix = str_ireplace("http://","", $url_noprefix);
 		$title = mysqli_real_escape_string($link, $_POST['title']);
 		$tags = mysqli_real_escape_string($link, $_POST['tags']);
 		$description = mysqli_real_escape_string($link, $_POST['description']);
@@ -48,7 +48,7 @@
 		$http = mysqli_real_escape_string($link, $_POST['http']);
 		$surprise = mysqli_real_escape_string($link, $_POST['surprise']);
 		$worksafe = mysqli_real_escape_string($link, $_POST['worksafe']);
-    	$enable = mysqli_real_escape_string($link, $_POST['enable']);
+		$enable = mysqli_real_escape_string($link, $_POST['enable']);
 		$updatable = mysqli_real_escape_string($link, $_POST['updatable']);
 		$shard = mysqli_real_escape_string($link, $_POST['shard']);
 
@@ -95,8 +95,9 @@
 					
 		}
 
-	    $output = 'No errors '.      
-	    $url . ' ' .    
+		$output = 'No errors '.      
+		$url . ' ' .
+		$url_noprefix . ' ' .      
 		$title . ' ' . 
 		$tags . ' ' . 
 		$description . ' ' . 
@@ -104,7 +105,7 @@
 		$http . ' ' . 
 		$surprise . ' ' . 
 		$worksafe . ' ' . 
-	    $enable . ' ' .
+		$enable . ' ' .
 		$updatable . ' ' .
 		$shard;  
 
